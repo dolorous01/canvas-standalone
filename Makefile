@@ -1,6 +1,7 @@
 SHELL := /bin/bash
 
-CANVAS_SOURCE_URL ?= https://github.com/dolorous01/sub2api/tree/6b390391c7d418567f2342c0b99fa0d558eaaece
+CANVAS_REVISION ?= $(shell git rev-parse --verify HEAD 2>/dev/null || printf unknown)
+CANVAS_SOURCE_URL ?= https://github.com/dolorous01/canvas-standalone/tree/$(CANVAS_REVISION)
 CANVAS_BUILD_ID ?= $(shell tr -d '[:space:]' < VERSION)
 
 .PHONY: fmt fmt-check lint test test-deploy build secret-scan check-canvas-license clean

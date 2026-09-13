@@ -8,10 +8,10 @@ const required = [
   'LICENSE.upstream',
   'NOTICE',
   'UPSTREAM.md',
-  '../public/infinite-canvas/manifest.json',
-  '../public/infinite-canvas/LICENSE',
-  '../public/infinite-canvas/LICENSE.upstream',
-  '../public/infinite-canvas/NOTICE'
+  '../dist/manifest.json',
+  '../dist/LICENSE',
+  '../dist/LICENSE.upstream',
+  '../dist/NOTICE'
 ]
 
 for (const relative of required) {
@@ -45,7 +45,7 @@ if (!notice.includes('v0.16.0') || !notice.includes(pinnedCommit) || !notice.inc
   throw new Error('canvas NOTICE does not describe the pinned snapshot and integration licenses')
 }
 
-const manifest = JSON.parse(readFileSync(resolve(root, '../public/infinite-canvas/manifest.json'), 'utf8'))
+const manifest = JSON.parse(readFileSync(resolve(root, '../dist/manifest.json'), 'utf8'))
 const entries = Object.values(manifest)
 if (!entries.some((entry) => entry && entry.isEntry && typeof entry.file === 'string')) {
   throw new Error('canvas manifest has no ESM entry')

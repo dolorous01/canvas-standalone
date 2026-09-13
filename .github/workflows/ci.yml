@@ -23,13 +23,15 @@ jobs:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
       - run: make fmt-check
-      - run: make lint
-      - run: make test
+      - run: go vet ./...
+        working-directory: backend
+      - run: go test ./...
+        working-directory: backend
 
   frontend:
     runs-on: ubuntu-latest
     env:
-      VITE_CANVAS_SOURCE_URL: ${{ format('{0}/{1}/tree/{2}', github.server_url, github.repository, github.sha) }}
+      CANVAS_SOURCE_URL: ${{ format('{0}/{1}/tree/{2}', github.server_url, github.repository, github.sha) }}
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v6

@@ -1,0 +1,15 @@
+{
+  "format": "sub2api-deployment-catalog/v1",
+  "sub2api": {
+    "version": "0.1.180-operator.1",
+    "image": "ghcr.io/example/sub2api@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "release_url": "https://github.com/example/sub2api/releases/tag/v0.1.180-operator.1"
+  },
+  "canvas": {
+    "version": "0.2.0",
+    "build_id": "0.2.0",
+    "api_image": "ghcr.io/example/canvas-api@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "web_image": "ghcr.io/example/canvas-web@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "release_url": "https://github.com/example/canvas-standalone/releases/tag/v0.2.0"
+  }
+}

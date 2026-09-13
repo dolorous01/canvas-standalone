@@ -1,0 +1,158 @@
+openapi: 3.1.0
+info:
+  title: Canvas Standalone API
+  version: 0.1.0
+servers:
+  - url: /canvas-api/v1
+security:
+  - officialBearer: []
+paths:
+  /session:
+    get:
+      operationId: getSession
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Error' }
+  /credentials/candidates:
+    get:
+      operationId: listCredentialCandidates
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+  /credentials:
+    post:
+      operationId: bindCredential
+      responses:
+        '201': { $ref: '#/components/responses/Success' }
+        '409': { $ref: '#/components/responses/Error' }
+  /credentials/{credential_id}:
+    delete:
+      operationId: deleteCredential
+      parameters:
+        - $ref: '#/components/parameters/CredentialID'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+  /config:
+    get:
+      operationId: getCanvasConfig
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+  /projects:
+    get:
+      operationId: listProjects
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+    post:
+      operationId: createProject
+      responses:
+        '201': { $ref: '#/components/responses/Success' }
+  /projects/{project_id}:
+    get:
+      operationId: getProject
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '404': { $ref: '#/components/responses/Error' }
+    patch:
+      operationId: updateProject
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '409': { $ref: '#/components/responses/Error' }
+    delete:
+      operationId: deleteProject
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+  /assets:
+    post:
+      operationId: uploadAsset
+      responses:
+        '201': { $ref: '#/components/responses/Success' }
+  /assets/{asset_id}:
+    get:
+      operationId: downloadAsset
+      parameters:
+        - $ref: '#/components/parameters/AssetID'
+      responses:
+        '200': { description: Authenticated asset bytes }
+        '404': { $ref: '#/components/responses/Error' }
+  /library-items:
+    get:
+      operationId: listLibraryItems
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+    post:
+      operationId: createLibraryItem
+      responses:
+        '201': { $ref: '#/components/responses/Success' }
+  /editor-documents:
+    post:
+      operationId: createEditorDocument
+      responses:
+        '201': { $ref: '#/components/responses/Success' }
+  /jobs:
+    post:
+      operationId: createJob
+      responses:
+        '202': { $ref: '#/components/responses/Success' }
+  /jobs/{job_id}:
+    get:
+      operationId: getJob
+      parameters:
+        - $ref: '#/components/parameters/JobID'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+    delete:
+      operationId: cancelJob
+      parameters:
+        - $ref: '#/components/parameters/JobID'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+  /jobs/{job_id}/events:
+    get:
+      operationId: streamJobEvents
+      parameters:
+        - $ref: '#/components/parameters/JobID'
+      responses:
+        '200':
+          description: Server-sent job events
+          content:
+            text/event-stream: {}
+components:
+  securitySchemes:
+    officialBearer:
+      type: http
+      scheme: bearer
+  parameters:
+    ProjectID: { name: project_id, in: path, required: true, schema: { type: string } }
+    AssetID: { name: asset_id, in: path, required: true, schema: { type: string } }
+    JobID: { name: job_id, in: path, required: true, schema: { type: string } }
+    CredentialID: { name: credential_id, in: path, required: true, schema: { type: string } }
+  schemas:
+    Envelope:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: integer }
+        message: { type: string }
+        reason: { type: string }
+        data: {}
+    ErrorEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+      required: [code, message, reason]
+  responses:
+    Success:
+      description: Successful Canvas response
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Envelope' }
+    Error:
+      description: Canvas error response
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+

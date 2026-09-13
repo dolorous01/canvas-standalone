@@ -1,0 +1,10 @@
+Infinite Canvas includes basketikun/infinite-canvas release v0.16.0 at commit
+9414048f9d0a099386aa15d81bedb5376b79ee61. The copied upstream source is
+Copyright (c) 2026 basketikun and is distributed under the MIT License; see
+LICENSE.upstream.
+
+Sub2API integration code replaces direct provider configuration, browser-stored
+provider credentials, and local-only persistence with an authenticated host
+bridge, server projects and media assets, and server-managed generation tasks.
+That integration code is distributed with Sub2API under AGPL-3.0-only; see
+LICENSE.

@@ -1,0 +1,16 @@
+.git
+.github
+.claude
+**/node_modules
+node_modules
+bin
+dist
+public
+coverage
+data
+objects
+secrets
+tmp
+*.dump
+*.backup
+*.log

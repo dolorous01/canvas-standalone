@@ -1,0 +1,20 @@
+{
+  "contract_version": "1",
+  "mapping": {
+    "400": "invalid_request",
+    "401": "unauthenticated",
+    "403": "forbidden",
+    "404": "not_found",
+    "409": "invalid_request",
+    "422": "invalid_request",
+    "429": "rate_limited",
+    "500-599": "upstream_unavailable"
+  },
+  "rules": [
+    "Reject non-JSON success responses",
+    "Reject malformed envelopes and bodies over the configured limit",
+    "Never retain or return an upstream error body",
+    "Treat an image transport failure after dispatch as indeterminate"
+  ]
+}
+

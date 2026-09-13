@@ -1,0 +1,22 @@
+{
+  "contract_version": "1",
+  "verified_upstream": {
+    "release": "v0.2.4",
+    "revision": "5de5e2bed035d43591a2e10e51f420ef6a84eb98"
+  },
+  "list": {
+    "method": "GET",
+    "path": "/api/v1/keys?page=1&page_size=100",
+    "required_data": ["items", "total"],
+    "browser_fields": ["id", "name", "group_id", "status", "quota", "quota_used", "expires_at"],
+    "always_strip": ["key", "user_id", "ip_whitelist", "ip_blacklist"]
+  },
+  "detail": {
+    "method": "GET",
+    "path": "/api/v1/keys/{id}",
+    "required_fields": ["id", "user_id", "key", "name", "status"],
+    "consumer": "canvas-api credential binding only",
+    "browser_disclosure": false
+  }
+}
+

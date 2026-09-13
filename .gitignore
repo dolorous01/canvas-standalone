@@ -1,0 +1,40 @@
+.env
+.env.*
+!.env.example
+
+# Credentials and production state
+secrets/
+*.key
+*.pem
+*.dump
+*.backup
+*.ndjson
+canvas-data/
+data/
+objects/
+state/
+deploy/environments/*.env
+!deploy/environments/*.env.example
+deploy/local-images.env
+
+# JavaScript
+node_modules/
+dist/
+coverage/
+public/infinite-canvas/
+pnpm-debug.log*
+
+# Go
+bin/
+*.test
+coverage.out
+
+# Tooling
+.claude/
+.idea/
+.vscode/
+.DS_Store
+__pycache__/
+*.py[cod]
+tmp/
+*.tmp

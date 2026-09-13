@@ -1,0 +1,25 @@
+{
+  "contract_version": "1",
+  "verified_upstream": {
+    "release": "v0.2.4",
+    "revision": "5de5e2bed035d43591a2e10e51f420ef6a84eb98"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/api/v1/user/profile",
+    "authorization": "Bearer <opaque official access token>"
+  },
+  "success": {
+    "http_status": 200,
+    "content_type": "application/json",
+    "required_envelope": { "code": 0, "message": "success" },
+    "required_data": {
+      "id": "positive integer",
+      "role": ["user", "admin"],
+      "status": "active"
+    }
+  },
+  "canvas_principal": ["external_user_id", "role", "status"],
+  "forbidden": ["password", "jwt_secret", "provider_credentials"]
+}
+

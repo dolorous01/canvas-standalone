@@ -1,0 +1,9 @@
+Canvas Standalone is an independent Studio service extracted from the Sub2API
+Canvas integration at revision 6b390391c7d418567f2342c0b99fa0d558eaaece.
+
+The Canvas frontend includes source derived from basketikun/infinite-canvas
+v0.16.0 at revision 9414048f9d0a099386aa15d81bedb5376b79ee61.
+That upstream snapshot remains under the MIT License in
+frontend/LICENSE.upstream. The surrounding integration and standalone service
+are distributed under AGPL-3.0-only; see LICENSE.
+

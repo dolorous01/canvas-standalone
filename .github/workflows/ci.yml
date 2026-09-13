@@ -32,6 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CANVAS_SOURCE_URL: ${{ format('{0}/{1}/tree/{2}', github.server_url, github.repository, github.sha) }}
+      VITE_CANVAS_SOURCE_URL: ${{ format('{0}/{1}/tree/{2}', github.server_url, github.repository, github.sha) }}
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v6

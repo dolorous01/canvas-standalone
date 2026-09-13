@@ -4,7 +4,7 @@ set -Eeuo pipefail
 
 repository_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 route_file="${1:-$repository_root/state/proxy-routes.rehearsal.json}"
-port="${2:-18082}"
+port="${2:-18088}"
 temporary_dir="$(mktemp -d /tmp/canvas-maintenance-smoke.XXXXXX)"
 marker="$temporary_dir/legacy-canvas-frozen"
 log_file="$temporary_dir/proxy.log"

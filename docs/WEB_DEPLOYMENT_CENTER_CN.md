@@ -237,11 +237,12 @@ stat -c '%a %U:%G %n' "$catalog"
 
 ### 4.7 在备用端口验证
 
-当前机器的 `18080`、`18081` 是 Sub2API 蓝绿后端端口，不要占用。先确认 `18082`
-没有监听者；输出应只有标题行，否则换一个未使用的本机端口，并同步替换本节全部 `18082`：
+当前机器的 `18080` 是 Sub2API 内部 HAProxy，`18081`、`18082` 是蓝绿后端端口，
+都不要占用。先确认 `18088` 没有监听者；输出应只有标题行，否则换一个未使用的本机
+端口，并同步替换本节全部 `18088`：
 
 ~~~bash
-ss -ltn 'sport = :18082'
+ss -ltn 'sport = :18088'
 ~~~
 
 终端 A：
@@ -249,7 +250,7 @@ ss -ltn 'sport = :18082'
 ~~~bash
 "$runtime_scripts/sub2api_path_proxy.py" \
   --host 127.0.0.1 \
-  --port 18082 \
+  --port 18088 \
   --sub2api http://127.0.0.1:18080 \
   --auto-clean http://127.0.0.1:8093 \
   --canvas-routes-file "$standalone_root/state/proxy-routes.rehearsal.json" \
@@ -264,9 +265,9 @@ ss -ltn 'sport = :18082'
 
 ~~~bash
 curl -sS -o /tmp/operator-no-auth.json -w '%{http_code}\n' \
-  http://127.0.0.1:18082/api/v1/admin/deployments
+  http://127.0.0.1:18088/api/v1/admin/deployments
 curl -sS -o /tmp/operator-old-update.json -w '%{http_code}\n' \
-  -X POST http://127.0.0.1:18082/api/v1/admin/system/update
+  -X POST http://127.0.0.1:18088/api/v1/admin/system/update
 jq . /tmp/operator-no-auth.json /tmp/operator-old-update.json
 ~~~
 
@@ -279,7 +280,7 @@ read -r -s -p '粘贴管理员 auth_token（输入不可见）: ' admin_token
 printf '\n'
 curl -fsS \
   -H "Authorization: Bearer $admin_token" \
-  http://127.0.0.1:18082/api/v1/admin/deployments |
+  http://127.0.0.1:18088/api/v1/admin/deployments |
   jq '{components, active_operation, reconciliation}'
 unset admin_token
 ~~~
@@ -451,7 +452,7 @@ Sub2API 仓库。
 2026-09-13 已将集成工作树快进到 `origin/main@bdb42e22f`，本地更新中心补丁无冲突恢复。
 正式服务未切换，验收均使用备用端口、假 catalog 或浏览器 mock：
 
-- 备用代理 `127.0.0.1:18082`：新状态接口无令牌返回
+- 备用代理 `127.0.0.1:18088`：新状态接口无令牌返回
   `401 invalid_admin_bearer`，伪令牌返回 `401 admin_access_required`；
 - 同一备用代理：旧 `POST /api/v1/admin/system/update` 继续返回
   `403 immutable_deployment_required`；

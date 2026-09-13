@@ -1,11 +1,11 @@
 # Sub2API / 创作台网页独立更新中心
 
-状态：代码已实现并通过单元测试；正式代理与正式镜像尚未切换  
+状态：正式代理、双卡片前端和两个独立发布入口均已启用
 更新日期：2026-09-13
 
-## 1. 为什么当前前端仍然不能更新
+## 1. 为什么旧前端不能更新，以及现在从哪里进入
 
-当前失败不是偶发网络问题，而是旧调用链已不适合拆分部署：
+旧调用链不适合拆分部署：
 
 ~~~text
 旧前端“立即更新”
@@ -16,12 +16,12 @@
 这个 403 必须保留。旧接口只会在 Sub2API 内部原地替换程序，不知道独立创作台、蓝绿
 发布、Canvas route 或更新后对账。解除 403 后，下一次更新仍可能把镜像内的创作台替换掉。
 
-现在还有三个启用条件未完成：
+截至 2026-09-13，这三个启用条件已经完成：正式 Sub2API 为
+`0.2.4-operator.1`，代理已加载 `deployment_operator.py`，Canvas stable `0.1.0` 已接管
+`/studio`。管理员登录后点击页面中的版本入口，再选择“更新管理”，即可打开左右双卡片。
 
-1. 正式 Sub2API 仍运行旧前端镜像，新双卡片前端尚未发布；
-2. 正式代理仍运行 /home/ubuntu/ResearchWang13/scripts 下的旧副本，没有加载
-   deployment_operator.py 和 operator 参数；
-3. 独立 Canvas stable 尚未接管 /studio，控制器会主动返回 canvas_stable_required。
+两张卡当前都显示“已是最新版本”时，更新按钮禁用是正常状态。先把下一版不可变 digest
+登记到本机 catalog，对应卡片才会变为“可更新”；另一张卡不会被放行或改变。
 
 正确的新调用链是：
 
@@ -95,7 +95,7 @@ POST /api/v1/admin/deployments/canvas/rollback
 GET  /api/v1/admin/deployments/operations/:id
 ~~~
 
-## 4. 第一次启用
+## 4. 第一次启用（本机已完成，供重建参考）
 
 旧网页本身没有双卡片，所以第一次必须从终端 bootstrap。之后日常更新才从网页执行。
 
@@ -106,12 +106,13 @@ GET  /api/v1/admin/deployments/operations/:id
 1. 正式 Sub2API 与旧创作台数据已有备份；
 2. 独立 Canvas stable 已接管 /studio 和 /canvas-api；
 3. canvas-verify.sh --slot stable 通过；
-4. 管理员已在新创作台手动绑定自己的低额度 Key；
+4. 首次可按批准方案跳过 Key 迁移和对账；需要生成图片前，管理员再手动绑定自己的低额度
+   Key；
 5. 当前用户能运行 Docker，并能无交互调用 root-owned 蓝绿脚本；
 6. 磁盘、内存和数据库迁移门禁通过。
 
-stable 未接管前可以安装控制器并看状态，但更新按钮会保持禁用。不要绕过
-canvas_stable_required。
+新机器在 stable 未接管前可以安装控制器并看状态，但更新按钮会保持禁用。不要绕过
+`canvas_stable_required`。本机 stable 已接管，不再受这个门禁阻止。
 
 ### 4.2 准备最新版 Sub2API 工作树
 
@@ -449,21 +450,24 @@ Sub2API 仓库。
 
 ## 10. 本机验收记录
 
-2026-09-13 已将集成工作树快进到 `origin/main@bdb42e22f`，本地更新中心补丁无冲突恢复。
-正式服务未切换，验收均使用备用端口、假 catalog 或浏览器 mock：
+2026-09-13 已发布集成提交 `9cd69bab52895b013a4a76225051a8a9df72d9ef`、标签
+`v0.2.4-operator.1` 和不可变镜像
+`sha256:166fdf4724b6c3885e243fd9c23f23d98eb4b83f2a437f9040e0c3160960c205`。正式
+Sub2API 当前由 green 提供，Canvas stable 保持独立运行。
 
 - 备用代理 `127.0.0.1:18088`：新状态接口无令牌返回
-  `401 invalid_admin_bearer`，伪令牌返回 `401 admin_access_required`；
+  `401 invalid_admin_bearer`；
 - 同一备用代理：旧 `POST /api/v1/admin/system/update` 继续返回
   `403 immutable_deployment_required`；
 - Playwright 桌面 `1365x900`：Sub2API 卡片在左、创作台卡片在右；
 - Playwright 移动端 `390x844`：两张卡片改为纵向单列，页面横向溢出为 `0px`；
 - 桌面和移动端均未出现部署中心运行时错误或控件重叠。
-- `make test-deploy`：代理/控制器 17 项、catalog 3 项、对账 9 项及两组 Shell 守卫通过；
+- 正式管理员状态请求显示 Sub2API `0.2.4-operator.1`、Canvas `0.1.0`，两张卡均为
+  `already_up_to_date`；
+- `make test-deploy`：代理/控制器 19 项、catalog 3 项、对账 9 项及三组 Shell 守卫通过；
 - 前端 deployment 定向测试 7 项、i18n 完整性测试 3 项、完整 ESLint 和
   `pnpm run typecheck` 通过。
+- 分支 CI、前端生产构建、安全扫描、镜像发布和本机 digest 拉取均通过。
 
-本机在最新基线上的 `pnpm run typecheck` 已通过；构建模式 `vue-tsc -b` 和完整 Vite
-生产构建仍受约 2 GiB 内存限制，曾在 swap 耗尽、`transforming` 或后台 checker 阶段
-无法完成。生产镜像必须在至少 4 GiB 可用内存的 CI/构建机完成 4.3 的最后两条命令后
-再发布；不能把开发服务器输出当作生产构建产物。
+本机只有约 2 GiB 内存，后续仍应由至少 4 GiB 可用内存的 CI/构建机完成生产构建；不能
+把开发服务器输出当作生产构建产物。

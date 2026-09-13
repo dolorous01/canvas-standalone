@@ -9,9 +9,11 @@ projects, assets, editor documents, and durable Canvas jobs.
 
 The service was extracted from the verified Canvas.18 source revision
 `6b390391c7d418567f2342c0b99fa0d558eaaece`. Candidate and migration rehearsals
-are complete. Production changes still require every gate in the Chinese
-dual-track upgrade runbook; a tagged image is not by itself approval to cut
-traffic or enable writes.
+are complete. Production cutover completed on 2026-09-13: standalone stable
+owns `/studio` and Canvas writes, while Sub2API is released independently by
+blue-green deployment. Future releases still require every applicable gate in
+the Chinese dual-track upgrade runbook; a tagged image is not by itself
+approval to change production.
 
 ## Release Boundary
 
@@ -26,7 +28,9 @@ See [docs/architecture.md](docs/architecture.md),
 [docs/development.md](docs/development.md), and the Chinese
 [dual-track upgrade runbook](docs/UPGRADE_CN.md). The Chinese
 [key reconciliation runbook](docs/KEY_RECONCILIATION_CN.md) documents the
-one-time manual binding and read-only post-update checks.
+one-time manual binding and read-only post-update checks. The
+[2026-09-13 production cutover record](docs/PRODUCTION_CUTOVER_20260913_CN.md)
+records the deployed digests, evidence, deviations, and rollback boundary.
 
 ## Local Verification
 

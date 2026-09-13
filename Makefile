@@ -27,6 +27,7 @@ test-deploy:
 	python3 -m unittest discover -s deploy/reconcile -p 'test_*.py' -v
 	./deploy/tests/test-sub2api-guard.sh
 	./deploy/tests/test-reconcile-shell.sh
+	./deploy/tests/test-canvas-writes.sh
 
 build:
 	mkdir -p bin

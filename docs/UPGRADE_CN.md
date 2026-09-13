@@ -1,6 +1,6 @@
 # Sub2API 与创作台双轨升级手册
 
-状态：candidate 已部署，正式切流尚未批准  
+状态：正式拆分已完成，Sub2API 与 Canvas 可独立更新
 最近验证：2026-09-13
 
 ## 1. 最终目标
@@ -31,51 +31,42 @@ Key 和数据的长期边界、首次不迁移 Key、后续更新自动对账的
 
 ## 2. 当前真实状态
 
-截至 2026-09-13：
+截至 2026-09-13 正式切流完成后：
 
 | 项目 | 当前状态 |
 | --- | --- |
-| 正式 `/studio` | 仍由现有 `sub2api_blue` 中的 Canvas.18 提供，未切流 |
+| 正式 `/studio` | 独立 Canvas stable `0.1.0`，已接管并允许写入 |
+| stable API/Web 端口 | `127.0.0.1:18101` / `127.0.0.1:18100` |
+| stable 镜像 | API `sha256:a4a1ce8e...b6b1a90e`；Web `sha256:c5ffa3c8...d3071e` |
 | 独立 candidate | `0.1.0-rehearsal.5`，入口 `/studio-next`，只读对账接口已部署 |
 | candidate API/Web 端口 | `127.0.0.1:18111` / `127.0.0.1:18110` |
 | candidate 写入 | 关闭，`CANVAS_WRITES_ENABLED=false` |
 | candidate allowlist | 仅正式管理员 `external_user_id=1` |
-| 独立 stable | 尚未创建，不能执行正式 `/studio` 切流 |
 | 路由文件 | `/home/ubuntu/canvas-standalone/state/proxy-routes.rehearsal.json` |
 | 迁移摘要 | `74565d67189ec023533ec5538a250228a53954cb57ae75963cf50fb6e4cd6813` |
-| 官方更新保护 | 已实现；stable 未接管前会拒绝更新官方 Sub2API |
-| 首次 Key 方案 | 不迁移旧 Key；stable 开写后由管理员手动绑定一次 |
-| 后续 Key 对账 | 已实现；本次首次 rehearsal 按约定未使用 access token、未生成用户级报告 |
-| 已核验的官方最新版本 | `v0.2.4`（2026-09-09 发布） |
-| `v0.2.4` GHCR index digest | `sha256:ccf47a1c62e355f51f896e489f8253e119fe4101b103cd701ba458cc6c6f0f77` |
-| 最新上游前端集成 | `origin/main@bdb42e22f`；位于 `/home/ubuntu/sub2api-latest-canvas`，尚未发布 |
-| 网页更新控制器 | 代码和测试已完成；正式代理仍未安装 operator 参数 |
+| 当前 Sub2API | `0.2.4-operator.1`，green 活动，镜像 `sha256:166fdf47...0960c205` |
+| 官方更新保护 | 已启用；发布前后强制证明 Canvas stable 身份完全不变 |
+| 旧 Canvas 写入 | 永久冻结；`state/operator/legacy-canvas-frozen` 不得删除 |
+| 首次 Key 方案 | 已按约定迁移 0 个 credential；管理员按需手动绑定一次 |
+| 后续 Key 对账 | 网页独立更新后自动运行，只读且不接触 Key 明文 |
+| Canvas 到 Sub2API | 本机桥接流量被防火墙丢弃，两个 slot 固定使用 `https://dolorous.asia` |
+| 网页更新控制器 | 已安装；版本菜单中的“更新管理”为左右双卡片入口 |
 
-当前阶段可以验证 `/studio-next`，但不能直接更新正式 Sub2API。原因是正式 `/studio`
-仍在现有 Sub2API 镜像内；先更新它仍会使正式创作台消失。必须先完成第 8 节的首次正式
-切流，之后才能按第 6 节独立升级官方 Sub2API。
+现在可以分别更新两边。更新 Sub2API 只切 blue/green，更新 Canvas 先发布 candidate，验收
+后再发布 stable。旧的 `/api/v1/admin/system/update` 继续返回 403，这是预期保护；不要
+为了恢复旧按钮而解除它。
 
-也就是说，现在可以反复更新 **Canvas candidate**；正式 `/studio` 和官方 Sub2API 保持
-不动。首次切流完成后，同一套脚本才会放行官方 Sub2API 更新。这个拒绝不是功能缺失，
-而是防止再次覆盖创作台的硬门禁。
+### 2.1 2026-09-13 首次切流结果
 
-### 2.1 从当前状态更新到 v0.2.4
+1. 用户明确接受本次先提供图片能力；视频和音频生成未作为已支持能力发布。
+2. 旧 Canvas 写入在 `2026-09-13T03:43:22Z` 冻结，GET/HEAD 继续可读。
+3. final dump、对象归档和 export 已保存到权限 `0700` 的切流证据目录。
+4. 21 个项目、15 个资产和 20 个对象通过 `verify-transfer`；credential 数为 0。
+5. `/studio` 已切到 stable，管理员身份、4 个 active 项目和随机 3 个项目通过只读抽查。
+6. stable 开写后完成创建、保存、读取和删除临时项目的 smoke。
+7. Sub2API 蓝绿更新到 `0.2.4-operator.1`，保护脚本证明 Canvas 容器和 route 未改变。
 
-严格按下面顺序执行：
-
-1. 在当前正式域名后加 `/studio-next`，用管理员账号登录。
-2. 确认能看到该管理员迁移后的 4 个 active 项目，并抽查至少 3 个项目的图片、节点、
-   连线和视口。
-3. 明确决定视频/音频门禁：先实现独立后端端点，或者书面接受首次切流暂时只支持图片。
-4. 安排维护窗口，按第 8 节和迁移总手册第 23 节完成冻结、最终导出、stable 导入、
-   `verify-transfer`、只读切路由和开写 smoke；首次不迁移任何旧 Key 或 credential，
-   开写后由管理员手动绑定一次。
-5. stable 验证通过后，执行第 6.3 节的 `v0.2.4` dry-run。
-6. dry-run 与变更审批通过后，执行第 6.4 节正式蓝绿更新。
-7. 执行第 6.5 节双重验证；失败时只按第 6.6 节回滚官方颜色。
-
-第 1-3 步没有完成前，不执行第 4-7 步。当前机器已经验证第 5 步所用的保护入口会因
-stable 尚未接管而主动拒绝，不会调用官方 deploy。
+完整证据索引和已知偏差见 [PRODUCTION_CUTOVER_20260913_CN.md](PRODUCTION_CUTOVER_20260913_CN.md)。
 
 ## 3. 每次操作先设置路径
 
@@ -291,15 +282,15 @@ sudo ./status.sh
 必须确认：活动颜色健康、HAProxy 与 state 对齐、`:18080` 和公共 `:8080/health`
 健康、PostgreSQL/Redis 正常、磁盘和内存满足门禁。
 
-### 6.3 选择官方镜像并 dry-run
+### 6.3 选择带更新中心的集成镜像并 dry-run
 
-从官方发布流水线取得完整 digest：
+把最新上游 Sub2API 合入更新中心补丁，通过 CI 后取得自有镜像完整 digest。不要直接发布
+不含双卡片前端的上游原版镜像，否则更新中心入口会消失。
 
 ```bash
-# 这是 2026-09-12 核验的 v0.2.4；执行当天仍要重新比对下一条命令的 Digest。
-sub2_tag='ghcr.io/wei-shaw/sub2api:0.2.4'
-sub2_image='ghcr.io/wei-shaw/sub2api@sha256:ccf47a1c62e355f51f896e489f8253e119fe4101b103cd701ba458cc6c6f0f77'
-docker buildx imagetools inspect "$sub2_tag"
+# 这是首次正式发布值；以后替换成新集成构建的 digest。
+sub2_image='ghcr.io/dolorous01/sub2api@sha256:166fdf4724b6c3885e243fd9c23f23d98eb4b83f2a437f9040e0c3160960c205'
+docker buildx imagetools inspect "$sub2_image"
 
 cd "$standalone_root"
 ./deploy/sub2api-release.sh \
@@ -309,8 +300,8 @@ cd "$standalone_root"
 ```
 
 `imagetools inspect` 显示的顶层 `Digest` 必须与 `sub2_image` 中的 64 位摘要相同；不同
-就停止并重新审核新版本。核对 dry-run 显示的旧活动颜色、新颜色、目标镜像和迁移/备份
-计划。脚本只在调用
+就停止并重新审核新版本。还要检查镜像标签中的源码 revision 和 operator 版本。核对
+dry-run 显示的旧活动颜色、新颜色、目标镜像和迁移/备份计划。脚本只在调用
 root-owned 蓝绿脚本时使用 `sudo`；不要把整个用户可写仓库交给 `sudo` 执行。
 
 如果输出 `Canvas stable preflight failed`，说明第 8 节尚未完成，官方更新会被正确阻止。
@@ -385,7 +376,8 @@ migration。
 
 ## 8. 首次正式拆分切流
 
-当前还没有完成本节。它不是普通更新，必须安排维护窗口并按
+本机已于 2026-09-13 完成本节。以下内容作为首次迁移审计记录和新机器实施模板保留，
+不得在日常更新中重复执行。新机器首次迁移仍必须安排维护窗口并按
 `/home/ubuntu/sub2api-infinite-canvas/docs/CANVAS_STANDALONE_MIGRATION_CN.md`
 第 23 节执行。
 
@@ -477,7 +469,38 @@ cd "$standalone_root"
 
 当前只允许 `external_user_id=1`。确认使用管理员账号；不要清空 allowlist 来绕过验收。
 
-### 9.5 更新失败后的状态
+### 9.5 Canvas 登录返回 `official_unavailable`
+
+先从对应 API 容器验证官方入口：
+
+```bash
+docker exec canvas_stable_api \
+  /usr/local/bin/canvas-healthcheck http://host.docker.internal:18080/health
+docker exec canvas_stable_api \
+  /usr/local/bin/canvas-healthcheck https://dolorous.asia/health
+```
+
+本机防火墙会丢弃第一条 bridge-to-host 请求，第二条 HTTPS 请求应成功。因此生产
+`deploy/environments/stable.env` 和 `candidate.env` 都使用：
+
+```text
+CANVAS_OFFICIAL_BASE_URL=https://dolorous.asia
+```
+
+修改后只重建对应 slot 的 API/worker，并继续使用当前 release 文件：
+
+```bash
+docker compose --project-name canvas-stable \
+  --env-file deploy/environments/stable.env \
+  --env-file state/stable/releases/current.env \
+  -f deploy/compose.yml up -d --force-recreate api worker
+./deploy/canvas-verify.sh --slot stable --route-file "$canvas_route_file"
+```
+
+不要把公网 IP、Docker gateway IP 或临时容器 IP写死到配置。若以后调整主机防火墙并恢复
+内部入口，必须先在 candidate 验证认证、图片请求和超时路径，再修改 stable。
+
+### 9.6 更新失败后的状态
 
 ```bash
 cd "$standalone_root"
@@ -490,6 +513,16 @@ tail -50 state/candidate/releases/audit.jsonl
 失败日志和备份，不删除 volume。
 
 ## 10. 当前验收证据
+
+正式切流证据位于：
+
+```text
+/home/ubuntu/canvas-standalone/state/cutover-20260913T030438Z/
+/home/ubuntu/canvas-standalone/state/official-guard/release-20260913T041128Z.h1Tkn5/
+```
+
+目录包含 final dump、对象归档、export manifest、`verify-transfer`、只读项目抽查、写入
+smoke 和发布前后 Canvas 身份；目录权限为 `0700`，不得提交 Git。
 
 两次规范化导出及两套空目标验证位于：
 

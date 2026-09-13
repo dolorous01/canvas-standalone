@@ -33,6 +33,10 @@ require_command mktemp
 
 current="$(current_release_file stable)"
 test -f "$current" || die "Canvas stable has no current release"
+release="$(sed -n 's/^CANVAS_RELEASE=//p' "$current")"
+build_id="$(sed -n 's/^CANVAS_BUILD_ID=//p' "$current")"
+[[ "$release" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ ]] || die "Canvas stable current release is invalid"
+[[ "$build_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ ]] || die "Canvas stable current build ID is invalid"
 
 acquire_global_deploy_lock
 release_dir="$(state_release_dir stable)"
@@ -93,7 +97,7 @@ done
 "$DEPLOY_DIR/canvas-verify.sh" --slot stable --route-file "$route_file"
 
 printf '{"event":"write_mode","slot":"stable","writes_enabled":%s,"operator_external_user_id":%s,"release":"%s","build_id":"%s","created_at":"%s"}\n' \
-  "$mode" "$operator_external_id" "$CANVAS_RELEASE" "$CANVAS_BUILD_ID" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >>"$release_dir/audit.jsonl"
+  "$mode" "$operator_external_id" "$release" "$build_id" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >>"$release_dir/audit.jsonl"
 rollback_needed=false
 trap - ERR
 printf 'Canvas stable writes_enabled=%s is healthy\n' "$mode"

@@ -57,6 +57,62 @@ describe('model policy management', () => {
     return result!
   }
 
+
+  it('automatically discovers a single bound key and imports the selected image model', async () => {
+    const discovered = { model: 'gpt-image-2.5-flare', capability: defaultImageCapability, configured: false, parameter_source: 'basic' }
+    request.mockImplementation(async (method: string, path: string, body: unknown) => {
+      if (path.endsWith('/credentials/candidates')) return { code: 0, data: { items: [{ id: 32, name: 'Studio', bound: true, status: 'active', quota: 0, quota_used: 0 }] } }
+      if (path.includes('/model-discovery?')) return { code: 0, data: { api_key_id: 32, total: 3, models: [discovered, { ...discovered, model: 'gpt-image-2', configured: true }] } }
+      return { code: 0, data: method === 'PUT' ? { ...(body as object), version: 8 } : policy }
+    })
+    await mount('admin')
+    await act(async () => button('Add model').click())
+    expect(request.mock.calls.some(([, path]) => path.endsWith('/admin/model-discovery?api_key_id=32'))).toBe(true)
+    const select = document.querySelector<HTMLSelectElement>('select[aria-label="Select a discovered image model"]')!
+    expect(select).not.toBeNull()
+    expect(select.querySelector<HTMLOptionElement>('option[value="gpt-image-2"]')?.disabled).toBe(true)
+    await act(async () => { select.value = discovered.model; select.dispatchEvent(new Event('change', { bubbles: true })) })
+    await act(async () => button('Save', document.querySelector('.ant-modal')!).click())
+    const put = request.mock.calls.find(([method]) => method === 'PUT')!
+    expect(put[2].version).toBe(7)
+    expect(put[2].models).toEqual([...policy.models, { model: discovered.model, capability: defaultImageCapability, enabled: true, position: 1 }])
+    expect(refresh).toHaveBeenCalledOnce()
+  })
+
+  it('discards late results from the previous key and clears selection on a new probe', async () => {
+    let finishFirst!: (value: unknown) => void
+    request.mockImplementation(async (_method: string, path: string) => {
+      if (path.endsWith('/credentials/candidates')) return { code: 0, data: { items: [32, 33].map((id) => ({ id, name: String(id), bound: true, status: 'active', quota: 0, quota_used: 0 })) } }
+      if (path.endsWith('api_key_id=32')) return new Promise((resolve) => { finishFirst = resolve })
+      if (path.endsWith('api_key_id=33')) return { code: 0, data: { api_key_id: 33, total: 1, models: [{ model: 'gpt-image-2.5-sunburst', capability: defaultImageCapability, configured: false }] } }
+      return { code: 0, data: policy }
+    })
+    await mount('admin')
+    await act(async () => button('Add model').click())
+    const key = document.querySelector<HTMLSelectElement>('select[aria-label="Select a bound API key"]')!
+    await act(async () => { key.value = '32'; key.dispatchEvent(new Event('change', { bubbles: true })) })
+    await act(async () => { key.value = '33'; key.dispatchEvent(new Event('change', { bubbles: true })) })
+    await act(async () => finishFirst({ code: 0, data: { api_key_id: 32, total: 1, models: [{ model: 'stale-image', capability: defaultImageCapability }] } }))
+    expect(document.body.textContent).not.toContain('stale-image')
+    const select = document.querySelector<HTMLSelectElement>('select[aria-label="Select a discovered image model"]')!
+    await act(async () => { select.value = 'gpt-image-2.5-sunburst'; select.dispatchEvent(new Event('change', { bubbles: true })) })
+    expect(button('Save', document.querySelector('.ant-modal')!).disabled).toBe(false)
+    await act(async () => { key.value = '32'; key.dispatchEvent(new Event('change', { bubbles: true })) })
+    expect(button('Save', document.querySelector('.ant-modal')!).disabled).toBe(true)
+    expect(document.querySelector('select[aria-label="Select a discovered image model"]')).toBeNull()
+  })
+
+  it('keeps save disabled when model discovery fails', async () => {
+    request.mockImplementation(async (_method: string, path: string) => {
+      if (path.endsWith('/credentials/candidates')) return { code: 0, data: { items: [{ id: 32, name: 'Studio', bound: true, status: 'active', quota: 0, quota_used: 0 }] } }
+      if (path.includes('/model-discovery?')) throw new CanvasRequestError(403, 'Forbidden')
+      return { code: 0, data: policy }
+    })
+    await mount('admin')
+    await act(async () => button('Add model').click())
+    expect(document.body.textContent).toContain('Discovery failed.')
+    expect(button('Save', document.querySelector('.ant-modal')!).disabled).toBe(true)
+  })
   it('denies ordinary users without requesting or displaying the admin policy', async () => {
     await mount('user')
     expect(document.body.textContent).toContain('Only administrators can manage models')

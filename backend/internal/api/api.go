@@ -35,6 +35,7 @@ type OfficialClient interface {
 	Profile(context.Context, string) (gateway.Principal, error)
 	ListKeys(context.Context, string) ([]gateway.APIKeySummary, error)
 	GetKey(context.Context, string, int64) (gateway.APIKeySecret, error)
+	ListModels(context.Context, []byte) ([]string, error)
 }
 
 type CredentialRepository interface {
@@ -128,6 +129,7 @@ func New(dependencies Dependencies) (http.Handler, error) {
 	mux.HandleFunc("DELETE /canvas-api/v1/jobs/{job_id}", handler.cancelJob)
 	mux.HandleFunc("GET /canvas-api/v1/jobs/{job_id}/events", handler.streamJobEvents)
 	mux.HandleFunc("GET /canvas-api/v1/admin/model-policy", handler.getModelPolicy)
+	mux.HandleFunc("GET /canvas-api/v1/admin/model-discovery", handler.discoverModels)
 	mux.HandleFunc("PUT /canvas-api/v1/admin/model-policy", handler.updateModelPolicy)
 	mux.HandleFunc("GET /canvas-api/v1/admin/model-policy/audit", handler.listModelPolicyAudits)
 	protected := http.Handler(mux)

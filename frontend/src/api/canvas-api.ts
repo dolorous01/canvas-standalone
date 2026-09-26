@@ -81,6 +81,21 @@ export interface CanvasModelPolicy {
   models: CanvasModel[]
 }
 
+export interface CanvasDiscoveredModel {
+  model: string
+  capability: CanvasCapability
+  configured: boolean
+  parameter_source: 'configured' | 'basic'
+}
+
+export interface CanvasModelDiscovery {
+  api_key_id: number
+  models: CanvasDiscoveredModel[]
+  total: number
+  unrecognized: number
+  source: string
+  generation_verified: boolean
+}
 export interface CanvasCredentialCandidate {
   id: number
   name: string
@@ -366,6 +381,7 @@ export interface CanvasAudioGenerate {
 
 export interface CanvasAPI {
   getModelPolicy(): Promise<CanvasModelPolicy>
+  discoverModels(apiKeyID: number): Promise<CanvasModelDiscovery>
   updateModelPolicy(policy: CanvasModelPolicy): Promise<CanvasModelPolicy>
   listCredentialCandidates(): Promise<CanvasCredentialCandidate[]>
   bindCredential(externalAPIKeyID: number): Promise<CanvasCredential>
@@ -421,6 +437,7 @@ export function createCanvasAPI(host: CanvasHostContext): CanvasAPI {
 
   return {
     getModelPolicy: () => request('GET', '/admin/model-policy'),
+    discoverModels: (apiKeyID) => request('GET', `/admin/model-discovery?api_key_id=${apiKeyID}`),
     updateModelPolicy: (policy) => request('PUT', '/admin/model-policy', policy),
     async listCredentialCandidates() {
       const result = await request<{ items: CanvasCredentialCandidate[] }>('GET', '/credentials/candidates')

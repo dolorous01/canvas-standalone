@@ -8,6 +8,7 @@ import { refreshCanvasConfigStore } from '@sub2api/adapters/use-config-store'
 import { useCanvasHost } from '@sub2api/host-context'
 import { CanvasRequestError } from '@sub2api/runtime/standalone-host'
 import { buildPolicyModels, defaultImageCapability } from './model-policy-form'
+import { ModelDiscoveryPicker } from './model-discovery-picker'
 
 type Draft = { index: number | null; name: string; enabled: boolean; capability: string }
 
@@ -68,7 +69,7 @@ export default function ModelPolicyPage() {
     if (!policy) return
     const model = index === null ? undefined : policy.models[index]
     setDraft({ index, name: model?.model ?? '', enabled: model?.enabled ?? true,
-      capability: JSON.stringify(model?.capability ?? policy.models[0]?.capability ?? defaultImageCapability, null, 2) })
+      capability: JSON.stringify(model?.capability ?? defaultImageCapability, null, 2) })
     setDraftError('')
     setError('')
   }
@@ -144,17 +145,22 @@ export default function ModelPolicyPage() {
       </div>
       <Modal open={!!draft && admin} title={t(draft?.index === null ? 'modelPolicy.add' : 'modelPolicy.edit')}
         width={680} okText={t('modelPolicy.save')} cancelText={t('modelPolicy.cancel')} confirmLoading={saving}
-        okButtonProps={{ disabled: conflict }} cancelButtonProps={{ disabled: saving }} closable={!saving} mask={{ closable: false }}
+        okButtonProps={{ disabled: conflict || !draft?.name }} cancelButtonProps={{ disabled: saving }} closable={!saving} mask={{ closable: false }}
         onOk={() => void saveDraft()} onCancel={() => { if (!saving) setDraft(undefined) }}>
         {draft && <div className="flex flex-col gap-4 py-3">
           {(draftError || error) && <Alert type="error" title={draftError || error} />}
           {conflict && <Button onClick={() => void load()}>{t('modelPolicy.reloadDiscard')}</Button>}
+          {draft.index === null && <ModelDiscoveryPicker api={api}
+            onReset={() => setDraft((current) => current ? { ...current, name: '' } : current)}
+            onSelect={(model) => {
+              setDraft((current) => current ? { ...current, name: model.model, capability: JSON.stringify(model.capability, null, 2) } : current)
+              setDraftError('')
+            }} />}
           <label className="flex flex-col gap-1.5">{t('modelPolicy.name')}
-            <Input value={draft.name} maxLength={128} placeholder="gpt-image-2.5-flare" onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+            <Input value={draft.name} readOnly placeholder={t('modelPolicy.chooseModel')} />
           </label>
-          <p className="text-xs text-stone-500">{t('modelPolicy.nameHelp')}</p>
           {draft.index === null && <label className="flex flex-col gap-1.5">{t('modelPolicy.template')}
-            <select className="rounded border border-stone-300 bg-background p-2" defaultValue="" onChange={(e) => {
+            <select key={draft.name} className="rounded border border-stone-300 bg-background p-2" defaultValue="" onChange={(e) => {
               const template = policy?.models.find((item) => item.model === e.target.value)
               if (template) setDraft({ ...draft, capability: JSON.stringify(template.capability, null, 2) })
             }}><option value="" disabled>{t('modelPolicy.templateHint')}</option>

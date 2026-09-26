@@ -17,6 +17,9 @@ type candidateOfficial struct {
 	keys []gateway.APIKeySummary
 }
 
+func (official candidateOfficial) ListModels(context.Context, []byte) ([]string, error) {
+	return nil, errors.New("unexpected ListModels call")
+}
 func (official candidateOfficial) Profile(context.Context, string) (gateway.Principal, error) {
 	return gateway.Principal{}, errors.New("unexpected Profile call")
 }

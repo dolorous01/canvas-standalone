@@ -35,10 +35,10 @@ Key 和数据的长期边界、首次不迁移 Key、后续更新自动对账的
 
 | 项目 | 当前状态 |
 | --- | --- |
-| 正式 `/studio` | 独立 Canvas stable `0.1.2-models.1`，允许写入；管理员可进入 `/studio/admin/models` |
+| 正式 `/studio` | 独立 Canvas stable `0.1.3-model-discovery.2`，允许写入；模型管理支持按绑定 Key 自动探测 |
 | stable API/Web 端口 | `127.0.0.1:18101` / `127.0.0.1:18100` |
-| stable 镜像 | API `sha256:7e645909...b71fa372`；Web `sha256:32ea146e...50f1e5b7` |
-| 独立 candidate | `0.1.2-models.1`，入口 `/studio-next`，保持只读 |
+| stable 镜像 | API `sha256:c4af96ab...1de830b2`；Web `sha256:f409bb51...807dd2bd` |
+| 独立 candidate | `0.1.3-model-discovery.2`，入口 `/studio-next`，保持只读 |
 | candidate API/Web 端口 | `127.0.0.1:18111` / `127.0.0.1:18110` |
 | candidate 写入 | 关闭，`CANVAS_WRITES_ENABLED=false` |
 | candidate allowlist | 仅正式管理员 `external_user_id=1` |

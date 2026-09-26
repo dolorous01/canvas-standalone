@@ -55,7 +55,33 @@ https://dolorous.asia/studio/admin/models 。普通用户没有入口，后端�
 如果保存时返回 401，请重新登录；403 表示没有管理员权限；503 `writes_disabled`
 表示当前创作台环境只读。不要通过关闭认证或修改生产数据库绕过这些检查。
 
-## 2026-09-26 上线验收
+## 2026-09-26 Key 自动探测上线验收
+
+正式与候选版本为 `0.1.3-model-discovery.2`，源码 `97f44ffaab89572f2ce7e95a8fde8a0cdbed01c8`。
+
+- API：`ghcr.io/dolorous01/canvas-standalone-api@sha256:c4af96ab52a21739d6e715a73267d6c917aaf8cbf33dd844b9940c741de830b2`。
+- Web：`ghcr.io/dolorous01/canvas-standalone-web@sha256:f409bb516cf43efb2be02644ddfeb4f800b5cef0b5911d6171c82190807dd2bd`。
+- 完整 CI `36241889612`、标签 CI `36241962906`、镜像发布 `36241962950` 均成功。
+- 正式更新任务 `deploy-23f4fe956e5749eb8e9cc76b4c6654b3` 的发布、自动对账均成功。
+  对账可见 8 个 Key、可用 1 个、未绑定 7 个；`attention_required` 来自未绑定提示，
+  并非升级失败；对账没有读取明文 Key 或修改绑定。
+- Sub2API 继续运行 `0.2.4-operator.4`，容器 ID、镜像和启动时间与发布前一致。
+- 正式环境真实探测 Key #32 返回 1 个模型：`gpt-image-2`，标记“已配置”。
+  当前上游没有为这个 Key 返回 2.5 系列，页面不会伪造可用模型。
+- 候选环境按原方案没有绑定 Key；页面正确提示先绑定，强行探测 Key #32 返回 404。
+  没有为了验收建立新绑定。
+- 浏览器桌面 1440×980、手机 390×844 无横向溢出或运行时异常。
+  新模型选择交互使用仅限测试浏览器的模拟元数据验证，没有将模拟 2.5 模型写入生产。
+- 候选真实保存返回 503，版本保持 4；正式编辑原模型并原样保存返回 200，
+  版本 5→6，模型内容和全局启用状态完全相同。
+- 关闭再打开添加窗口会重新查询 Key；测试已覆盖切换 Key 时旧结果迟到的情况。
+- 仅查询模型名单，没有提交收费生成任务。
+
+验收结果与截图：`state/operator/model-discovery-20260926/`，包含
+`candidate-result.json`、`stable-result.json` 及两种尺寸截图。
+截图中文字体仅在测试浏览器临时注入。临时发布令牌与本次下载的测试浏览器在验收后清理。
+
+## 2026-09-26 模型管理初次上线验收
 
 - 正式与候选版本：`0.1.2-models.1`；源码 `2ba74d6c448902e42c320ce4d670bb605c4e8138`。
 - API 镜像：`ghcr.io/dolorous01/canvas-standalone-api@sha256:7e645909b4b14e08a2882bf2bf6da7bf23aafb428bffc9a63e8f90dbb71fa372`。

@@ -273,6 +273,12 @@ class ProxyHandler(BaseHTTPRequestHandler):
     def send_api_success(self, value: dict[str, object], status: int = 200) -> None:
         self.send_api_json(status, {"code": 0, "message": "success", "data": value})
 
+    def session_binding_headers(self) -> dict[str, str]:
+        return {
+            key: value for key, value in self.forward_headers(self.config.sub2api, None).items()
+            if key.lower() in {"user-agent", "cf-connecting-ip", "x-real-ip", "x-forwarded-for"}
+        }
+
     def authenticate_deployment_admin(self) -> tuple[str, str]:
         authorization = self.headers.get("Authorization", "")
         scheme, separator, token = authorization.partition(" ")
@@ -286,12 +292,14 @@ class ProxyHandler(BaseHTTPRequestHandler):
             raise DeploymentError(401, "invalid_admin_bearer", "Administrator authentication is required.")
 
         target = self.config.sub2api
+        binding_headers = self.session_binding_headers()
         connection = http.client.HTTPConnection(target.host, target.port, timeout=10)
         try:
             connection.request(
                 "GET",
                 "/api/v1/admin/system/version",
                 headers={
+                    **binding_headers,
                     "Accept": "application/json",
                     "Accept-Encoding": "identity",
                     "Authorization": authorization,
@@ -395,7 +403,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
                     "The exact deployment confirmation header is required.",
                 )
             self.read_deployment_json()
-            operation = manager.start(component, action, bearer, current_version)
+            operation = manager.start(component, action, bearer, current_version, self.session_binding_headers())
             self.send_api_success(operation, 202)
         except RequestBodyError as error:
             self.send_json_error(error.status, "invalid_deployment_request", str(error))

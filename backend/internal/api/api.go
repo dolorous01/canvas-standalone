@@ -931,6 +931,7 @@ func (server *server) requireWrites(writer http.ResponseWriter, request *http.Re
 func (server *server) requestMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		started := time.Now()
+		request = request.WithContext(gateway.WithSessionHeaders(request.Context(), request.Header))
 		requestID := strings.TrimSpace(request.Header.Get("X-Request-ID"))
 		if requestID == "" || len(requestID) > 128 || strings.ContainsAny(requestID, "\r\n") {
 			requestID, _ = publicid.New("req")

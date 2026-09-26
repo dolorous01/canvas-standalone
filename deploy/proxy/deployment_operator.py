@@ -413,7 +413,15 @@ class DeploymentOperator:
             raise DeploymentError(404, "deployment_operation_not_found", "deployment operation was not found")
         return self._public_operation(self._read_operation(path))
 
-    def start(self, component: str, action: str, bearer: str, current_sub2api_version: str) -> dict[str, Any]:
+    def start(self, component: str, action: str, bearer: str, current_sub2api_version: str,
+              binding_headers: dict[str, str] | None = None) -> dict[str, Any]:
+        binding_headers = dict(binding_headers or {})
+        if any(
+            key.lower() not in {"user-agent", "cf-connecting-ip", "x-real-ip", "x-forwarded-for"}
+            or not isinstance(value, str) or len(value) > 8192 or "\r" in value or "\n" in value
+            for key, value in binding_headers.items()
+        ):
+            raise DeploymentError(400, "invalid_session_context", "invalid session binding headers")
         if component not in COMPONENTS or action not in ACTIONS:
             raise DeploymentError(404, "deployment_action_not_found", "deployment action was not found")
         if not bearer or len(bearer) > 4096 or any(character.isspace() for character in bearer):
@@ -481,7 +489,7 @@ class DeploymentOperator:
             self._active_operation_id = operation_id
             thread = threading.Thread(
                 target=self._run_operation,
-                args=(operation, bearer),
+                args=(operation, bearer, binding_headers),
                 name=operation_id,
                 daemon=True,
             )
@@ -573,9 +581,11 @@ class DeploymentOperator:
             "mutation_performed": mutation_was_performed,
         }
 
-    def _run_operation(self, operation: dict[str, Any], bearer: str) -> None:
+    def _run_operation(self, operation: dict[str, Any], bearer: str,
+                       binding_headers: dict[str, str] | None = None) -> None:
         operation_id = str(operation["id"])
         bearer_file = self.state_dir / "tokens" / f"{operation_id}.token"
+        binding_file = Path(str(bearer_file) + ".headers.json")
         report_file = self.state_dir / "reports" / f"{operation_id}.json"
         log_file = self.state_dir / "logs" / f"{operation_id}.log"
         try:
@@ -584,6 +594,7 @@ class DeploymentOperator:
             operation["started_at"] = utc_now()
             self._write_operation(operation)
             self._write_bearer(bearer_file, bearer)
+            self._write_bearer(binding_file, json.dumps(binding_headers or {}))
             bearer = ""
             command = self._build_command(operation, bearer_file, report_file)
             return_code = self.runner(command, self.repository_root, log_file, self.timeout_seconds)
@@ -634,10 +645,11 @@ class DeploymentOperator:
             }
         finally:
             bearer = ""
-            try:
-                bearer_file.unlink()
-            except FileNotFoundError:
-                pass
+            for temporary_file in (bearer_file, binding_file):
+                try:
+                    temporary_file.unlink()
+                except FileNotFoundError:
+                    pass
             operation["finished_at"] = utc_now()
             self._write_operation(operation)
             with self._lock:

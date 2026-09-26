@@ -355,6 +355,7 @@ func (c *Client) doEnvelope(ctx context.Context, method, path, bearer string, bo
 		return &ContractError{Kind: ErrorInvalidRequest, cause: err}
 	}
 	request.Header.Set("Accept", "application/json")
+	forwardSessionHeaders(ctx, request)
 	if body != nil {
 		request.Header.Set("Content-Type", "application/json")
 	}

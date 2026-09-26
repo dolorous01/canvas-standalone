@@ -21,6 +21,23 @@ CANVAS_WEB_IMAGE = "ghcr.io/example/canvas-web@sha256:" + "c" * 64
 
 
 class DeploymentOperatorTests(unittest.TestCase):
+    def test_binding_context_is_private_transient_and_not_in_status(self):
+        headers = {"User-Agent": "original-browser", "CF-Connecting-IP": "203.0.113.7"}
+        def runner(command, cwd, log, timeout):
+            token = Path(command[command.index("--reconcile-bearer-file") + 1])
+            sidecar = Path(str(token) + ".headers.json")
+            self.assertEqual(json.loads(sidecar.read_text()), headers)
+            self.assertEqual(sidecar.stat().st_mode & 0o777, 0o600)
+            return self.successful_runner(command, cwd, log, timeout)
+        operator = self.make_operator(runner)
+        started = operator.start("sub2api", "update", "token", "sub2-1", headers)
+        result = self.wait_for_terminal(operator, started["id"])
+        self.assertEqual(result["state"], "succeeded")
+        self.assertEqual(list((self.operator_state / "tokens").iterdir()), [])
+        self.assertNotIn("original-browser", json.dumps(result))
+        with self.assertRaises(DeploymentError):
+            operator.start("sub2api", "update", "token", "sub2-1", {"Cookie": "secret"})
+
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)

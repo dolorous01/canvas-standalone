@@ -1,7 +1,7 @@
 # Sub2API / 创作台网页独立更新中心
 
 状态：正式代理、双卡片前端和两个独立发布入口均已启用
-更新日期：2026-09-13
+更新日期：2026-09-26
 
 ## 1. 为什么旧前端不能更新，以及现在从哪里进入
 
@@ -18,7 +18,7 @@
 
 截至 2026-09-13，这三个启用条件已经完成：正式 Sub2API 为
 `0.2.4-operator.1`，代理已加载 `deployment_operator.py`，Canvas stable `0.1.0` 已接管
-`/studio`。管理员登录后点击页面中的版本入口，再选择“更新管理”，即可打开左右双卡片。
+`/studio`。从 operator.2 起，登录后的侧边栏顶部直接显示“创作台”，点击整页跳转到 /studio/。管理员点击侧边栏“更新管理”即可打开左右双卡片。收起侧边栏后保留图标和悬停提示，手机展开菜单后也可使用。
 
 两张卡当前都显示“已是最新版本”时，更新按钮禁用是正常状态。先把下一版不可变 digest
 登记到本机 catalog，对应卡片才会变为“可更新”；另一张卡不会被放行或改变。
@@ -71,7 +71,7 @@
 frontend/src/api/admin/deployments.ts
 frontend/src/components/common/DeploymentCenterDialog.vue
 frontend/src/components/common/DeploymentOperationStatus.vue
-frontend/src/components/common/VersionBadge.vue
+frontend/src/components/layout/AppSidebar.vue
 frontend/src/i18n/locales/zh/misc.ts
 frontend/src/i18n/locales/en/misc.ts
 ~~~
@@ -145,7 +145,7 @@ pnpm run lint:check
 pnpm exec vitest run \
   src/api/admin/__tests__/deployments.spec.ts \
   src/components/common/__tests__/DeploymentCenterDialog.spec.ts \
-  src/components/common/__tests__/VersionBadge.deployment.spec.ts
+  src/components/layout/__tests__/AppSidebar.spec.ts
 pnpm run check:i18n
 NODE_OPTIONS=--max-old-space-size=3072 pnpm run typecheck
 NODE_OPTIONS=--max-old-space-size=3072 pnpm exec vue-tsc -b --pretty false
@@ -342,7 +342,7 @@ jq '{status, keys, plaintext_key_accessed, mutation_performed}' "$report"
 ~~~
 
 预期新 Sub2API 健康、Canvas stable 身份完全不变，报告为 ok 或 attention_required，两个
-安全字段均为 false。此后版本菜单会出现“更新管理”。
+安全字段均为 false。operator.2 起侧边栏直接显示“更新管理”。
 
 ## 5. 日常更新
 
@@ -441,10 +441,10 @@ NODE_OPTIONS=--max-old-space-size=3072 pnpm run typecheck
 pnpm exec vitest run \
   src/api/admin/__tests__/deployments.spec.ts \
   src/components/common/__tests__/DeploymentCenterDialog.spec.ts \
-  src/components/common/__tests__/VersionBadge.deployment.spec.ts
+  src/components/layout/__tests__/AppSidebar.spec.ts
 ~~~
 
-冲突通常只在 VersionBadge.vue 和两个 misc.ts。每次构建使用新版本名和 digest，经 catalog
+合并时检查 AppSidebar.vue、app store、admin API 导出及两套 common.ts 和 misc.ts；不要恢复已删除的旧版本菜单和原地更新前端 API。每次构建使用新版本名和 digest，经 catalog
 批准后从左卡发布。创作台继续独立保存在 /home/ubuntu/canvas-standalone，不重新合入
 Sub2API 仓库。
 

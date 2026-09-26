@@ -33,8 +33,9 @@ type Authenticator struct {
 }
 
 type cacheEntry struct {
-	principal gateway.Principal
-	expiresAt time.Time
+	tokenDigest [sha256.Size]byte
+	principal   gateway.Principal
+	expiresAt   time.Time
 }
 
 func New(client ProfileClient, ttl time.Duration, maxEntries int) *Authenticator {
@@ -63,7 +64,8 @@ func (auth *Authenticator) AuthenticateToken(ctx context.Context, token string, 
 	if strings.TrimSpace(token) == "" || len(token) > 4096 || strings.ContainsAny(token, "\r\n") {
 		return gateway.Principal{}, ErrMissingBearer
 	}
-	digest := sha256.Sum256([]byte(token))
+	tokenDigest := sha256.Sum256([]byte(token))
+	digest := sha256.Sum256([]byte(token + "\x00" + gateway.SessionFingerprint(ctx)))
 	if !fresh && auth.ttl > 0 {
 		auth.mu.Lock()
 		entry, ok := auth.cache[digest]
@@ -86,7 +88,7 @@ func (auth *Authenticator) AuthenticateToken(ctx context.Context, token string, 
 	if auth.ttl > 0 {
 		auth.mu.Lock()
 		auth.evictExpiredOrOldest()
-		auth.cache[digest] = cacheEntry{principal: principal, expiresAt: auth.now().Add(auth.ttl)}
+		auth.cache[digest] = cacheEntry{tokenDigest: tokenDigest, principal: principal, expiresAt: auth.now().Add(auth.ttl)}
 		auth.mu.Unlock()
 	}
 	return principal, nil
@@ -95,7 +97,11 @@ func (auth *Authenticator) AuthenticateToken(ctx context.Context, token string, 
 func (auth *Authenticator) Invalidate(token string) {
 	digest := sha256.Sum256([]byte(token))
 	auth.mu.Lock()
-	delete(auth.cache, digest)
+	for key, entry := range auth.cache {
+		if entry.tokenDigest == digest {
+			delete(auth.cache, key)
+		}
+	}
 	auth.mu.Unlock()
 }
 

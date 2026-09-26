@@ -143,8 +143,36 @@ def reject_secret_fields(value: Any) -> None:
             reject_secret_fields(child)
 
 
-def fetch_json(entry_base: str, path: str, bearer: str | None) -> dict[str, Any]:
-    headers = {"Accept": "application/json"}
+def read_binding_headers(bearer_path: str) -> dict[str, str]:
+    """Optional 0600 sidecar, removed with the token after a deployment."""
+    path = Path(bearer_path + ".headers.json")
+    try:
+        descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+    except FileNotFoundError:
+        return {}
+    except OSError as error:
+        raise ReconcileError("invalid_session_context", "cannot read session context") from error
+    try:
+        with os.fdopen(descriptor, "rb") as handle:
+            metadata = os.fstat(handle.fileno())
+            if (not stat.S_ISREG(metadata.st_mode) or stat.S_IMODE(metadata.st_mode) != 0o600
+                    or metadata.st_uid != os.geteuid() or metadata.st_size > 65536):
+                raise ReconcileError("invalid_session_context", "session context must be a private bounded file")
+            headers = json.loads(handle.read(65537))
+    except (OSError, ValueError) as error:
+        raise ReconcileError("invalid_session_context", "invalid session context") from error
+    if not isinstance(headers, dict) or any(
+        key.lower() not in {"user-agent", "cf-connecting-ip", "x-real-ip", "x-forwarded-for"}
+        or not isinstance(value, str) or len(value) > 8192 or "\r" in value or "\n" in value
+        for key, value in headers.items()
+    ):
+        raise ReconcileError("invalid_session_context", "invalid session context headers")
+    return headers
+
+
+def fetch_json(entry_base: str, path: str, bearer: str | None,
+               binding_headers: dict[str, str] | None = None) -> dict[str, Any]:
+    headers = {**(binding_headers or {}), "Accept": "application/json"}
     if bearer is not None:
         headers["Authorization"] = f"Bearer {bearer}"
     request = urllib.request.Request(entry_base + path, headers=headers, method="GET")
@@ -436,7 +464,11 @@ def main() -> int:
         entry_base = validate_entry_base(entry_base)
         report_entry_base = entry_base
         bearer = read_bearer(arguments.bearer_file)
-        report = collect_report(arguments.slot, entry_base, bearer)
+        binding_headers = read_binding_headers(arguments.bearer_file)
+        report = collect_report(
+            arguments.slot, entry_base, bearer,
+            lambda base, path, token: fetch_json(base, path, token, binding_headers),
+        )
         target = write_report(arguments.report, report)
     except ReconcileError as error:
         try:

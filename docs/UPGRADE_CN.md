@@ -50,7 +50,7 @@ Key 和数据的长期边界、首次不迁移 Key、后续更新自动对账的
 | 首次 Key 方案 | 已按约定迁移 0 个 credential；管理员按需手动绑定一次 |
 | 后续 Key 对账 | 网页独立更新后自动运行，只读且不接触 Key 明文 |
 | Canvas 到 Sub2API | 本机桥接流量被防火墙丢弃，两个 slot 固定使用 `https://dolorous.asia` |
-| 网页更新控制器 | 已安装；版本菜单中的“更新管理”为左右双卡片入口 |
+| 网页更新控制器 | 已安装；operator.2 起管理员侧边栏直接显示“更新管理”，登录用户从“创作台”进入 /studio/ |
 
 现在可以分别更新两边。更新 Sub2API 只切 blue/green，更新 Canvas 先发布 candidate，验收
 后再发布 stable。旧的 `/api/v1/admin/system/update` 继续返回 403，这是预期保护；不要

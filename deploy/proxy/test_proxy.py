@@ -114,8 +114,11 @@ class ProxyRouteTests(unittest.TestCase):
 
 class DeploymentProxyTests(unittest.TestCase):
     def setUp(self) -> None:
+        self.auth_requests = []
+        auth_requests = self.auth_requests
         class AdminAuthHandler(BaseHTTPRequestHandler):
             def do_GET(self) -> None:
+                auth_requests.append(self.headers)
                 if self.path == "/api/v1/admin/system/version" and self.headers.get("Authorization") == "Bearer admin-token":
                     payload = {"code": 0, "message": "success", "data": {"version": "sub2-1"}}
                     body = json.dumps(payload).encode("ascii")
@@ -141,7 +144,7 @@ class DeploymentProxyTests(unittest.TestCase):
             def get_operation(self, operation_id: str) -> dict[str, object]:
                 return {"id": operation_id, "state": "succeeded"}
 
-            def start(self, component: str, action: str, bearer: str, current_version: str) -> dict[str, object]:
+            def start(self, component: str, action: str, bearer: str, current_version: str, binding_headers=None) -> dict[str, object]:
                 self.starts.append((component, action, bearer, current_version))
                 return {"id": "deploy-" + "a" * 32, "state": "queued"}
 
@@ -196,6 +199,26 @@ class DeploymentProxyTests(unittest.TestCase):
         status, payload = self.request("GET", "/api/v1/admin/deployments?timezone=Asia%2FShanghai", token="admin-token")
         self.assertEqual(status, 200)
         self.assertEqual(payload["data"]["current_version"], "sub2-1")
+
+    def test_admin_auth_preserves_binding_without_forwarding_unrelated_credentials(self) -> None:
+        status, _payload = self.request(
+            "GET", "/api/v1/admin/deployments", token="admin-token",
+            headers={
+                "User-Agent": "browser-session-agent",
+                "CF-Connecting-IP": "203.0.113.12",
+                "X-Real-IP": "203.0.113.12",
+                "X-Forwarded-For": "203.0.113.12",
+                "Cookie": "unrelated=private",
+            },
+        )
+        self.assertEqual(status, 200)
+        headers = self.auth_requests[-1]
+        self.assertEqual(headers.get("User-Agent"), "browser-session-agent")
+        self.assertEqual(headers.get("CF-Connecting-IP"), "203.0.113.12")
+        self.assertEqual(headers.get("X-Real-IP"), "203.0.113.12")
+        self.assertEqual(headers.get("X-Forwarded-For"), "203.0.113.12, 127.0.0.1")
+        self.assertIsNone(headers.get("Cookie"))
+        self.assertIsNone(headers.get("Content-Length"))
 
     def test_update_requires_exact_confirmation_and_empty_body(self) -> None:
         path = "/api/v1/admin/deployments/sub2api/update"

@@ -23,6 +23,28 @@ SPEC.loader.exec_module(reconcile)
 
 
 class PostUpdateReconcileTests(unittest.TestCase):
+    def test_session_context_sidecar_is_private_and_allowlisted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            bearer = str(Path(directory) / "session.token")
+            self.assertEqual(reconcile.read_binding_headers(bearer), {})
+            sidecar = Path(bearer + ".headers.json")
+            headers = {"User-Agent": "original-browser", "CF-Connecting-IP": "203.0.113.7"}
+            sidecar.write_text(json.dumps(headers))
+            sidecar.chmod(0o600)
+            self.assertEqual(reconcile.read_binding_headers(bearer), headers)
+            sidecar.chmod(0o644)
+            with self.assertRaises(reconcile.ReconcileError):
+                reconcile.read_binding_headers(bearer)
+            sidecar.chmod(0o600)
+            for invalid in ({"Cookie": "secret"}, {"User-Agent": "bad\r\nHeader: value"}):
+                sidecar.write_text(json.dumps(invalid))
+                with self.assertRaises(reconcile.ReconcileError):
+                    reconcile.read_binding_headers(bearer)
+            sidecar.unlink()
+            sidecar.symlink_to(Path(directory) / "missing")
+            with self.assertRaises(reconcile.ReconcileError):
+                reconcile.read_binding_headers(bearer)
+
     def setUp(self) -> None:
         self.calls: list[tuple[str, str | None]] = []
         self.token = "header.payload.signature"

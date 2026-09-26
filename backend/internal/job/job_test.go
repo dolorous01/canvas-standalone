@@ -36,10 +36,20 @@ func TestParseOutputsRequiresBoundedInlineData(t *testing.T) {
 	if err != nil || len(outputs) != 1 || outputs[0].mimeType != "image/webp" {
 		t.Fatalf("parseOutputs() = %+v, %v", outputs, err)
 	}
+	for _, url := range []string{"https://example.test/result.png", "http://127.0.0.1/private"} {
+		body := `{"data":[{"b64_json":"` + payload + `","url":"` + url + `"}]}`
+		outputs, err := parseOutputs([]byte(body), "png", 1)
+		if err != nil || len(outputs) != 1 || string(outputs[0].payload) != "image-bytes" || outputs[0].mimeType != "image/png" {
+			t.Fatalf("inline image with extra URL rejected or changed: %v", err)
+		}
+	}
 	for _, body := range []string{
 		`{"data":[]}`,
 		`{"data":[{"url":"https://example.test/result.png"}]}`,
 		`{"data":[{"b64_json":"%%%"}]}`,
+		`{"data":[{"b64_json":"%%%","url":"https://example.test/result.png"}]}`,
+		`{"data":[{"b64_json":"","url":"https://example.test/result.png"}]}`,
+		`{"data":[{"b64_json":"` + payload + `"},{"b64_json":"` + payload + `"}]}`,
 	} {
 		if _, err := parseOutputs([]byte(body), "png", 1); !errors.Is(err, ErrInvalid) {
 			t.Fatalf("invalid output accepted: %s; err=%v", body, err)

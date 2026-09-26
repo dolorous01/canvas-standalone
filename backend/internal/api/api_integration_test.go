@@ -81,7 +81,8 @@ func TestAPIAuthCredentialAndProjectIsolation(t *testing.T) {
 			}
 			data := make([]map[string]string, input.N)
 			for i := range data {
-				data[i] = map[string]string{"b64_json": imageBase64}
+				// Exercise the provider shape that previously failed after dispatch.
+				data[i] = map[string]string{"b64_json": imageBase64, "url": "http://127.0.0.1/unused-image-link"}
 			}
 			_ = json.NewEncoder(writer).Encode(map[string]any{"data": data})
 			return

@@ -873,7 +873,6 @@ func parseOutputs(body []byte, requestedFormat string, maxOutputs int) ([]output
 	var response struct {
 		Data []struct {
 			Base64 string `json:"b64_json"`
-			URL    string `json:"url"`
 		} `json:"data"`
 	}
 	if err := json.Unmarshal(body, &response); err != nil || len(response.Data) == 0 || len(response.Data) > maxOutputs {
@@ -881,7 +880,9 @@ func parseOutputs(body []byte, requestedFormat string, maxOutputs int) ([]output
 	}
 	result := make([]output, 0, len(response.Data))
 	for _, item := range response.Data {
-		if item.Base64 == "" || item.URL != "" || base64.StdEncoding.DecodedLen(len(item.Base64)) > int(asset.MaxUploadBytes) {
+		// Providers may include a URL alongside inline data. Consume only the
+		// inline image; additional links are ignored and never fetched.
+		if item.Base64 == "" || base64.StdEncoding.DecodedLen(len(item.Base64)) > int(asset.MaxUploadBytes) {
 			return nil, ErrInvalid
 		}
 		payload, err := base64.StdEncoding.Strict().DecodeString(item.Base64)

@@ -246,6 +246,11 @@ export function initializeCanvasConfigStore(preferredAPIKeyID?: number): Promise
     return configInitialization;
 }
 
+export function refreshCanvasConfigStore(): Promise<void> {
+    configInitialization = undefined;
+    return initializeCanvasConfigStore(selectedAPIKeyID);
+}
+
 export function resetCanvasConfigStore(): void {
     configInitializationVersion += 1;
     selectedAPIKeyID = undefined;

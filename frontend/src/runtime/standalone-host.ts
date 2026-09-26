@@ -107,6 +107,15 @@ export function createStandaloneHost(options: StandaloneHostOptions = {}): Canva
   }
 }
 
+export async function resolveStandaloneRole(host: CanvasHostContext): Promise<CanvasHostContext> {
+  const response = await host.request<{ data: { role: string; status: string } }>('GET', `${host.apiBaseURL}/session`)
+  const session = response.data
+  if (session?.status !== 'active' || !['user', 'admin'].includes(session.role)) {
+    throw new Error('Invalid Canvas session')
+  }
+  return { ...host, routeMode: session.role === 'admin' ? 'admin' : 'user' }
+}
+
 export function canvasBaseForPath(pathname: string): '/studio' | '/studio-next' {
   return pathname === '/studio-next' || pathname.startsWith('/studio-next/') ? '/studio-next' : '/studio'
 }

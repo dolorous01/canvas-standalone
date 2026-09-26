@@ -20,6 +20,7 @@ import {
     getSelectedCanvasAPIKeyID,
     initializeCanvasConfigStore,
     resetCanvasConfigStore,
+    refreshCanvasConfigStore,
     resolvePreferredCanvasAPIKeyID,
     selectCanvasAPIKey,
     useConfigStore,
@@ -61,6 +62,18 @@ describe("initializeCanvasConfigStore", () => {
         localStorage.clear();
         useCanvasSessionStore.getState().clear();
         resetCanvasConfigStore();
+    });
+
+    it("refreshes a cached catalog after administration without automatically selecting a key", async () => {
+        mocks.getConfig.mockResolvedValueOnce(summary);
+        await initializeCanvasConfigStore();
+        await initializeCanvasConfigStore();
+        expect(mocks.getConfig).toHaveBeenCalledTimes(1);
+        mocks.getConfig.mockResolvedValueOnce({ ...summary, policy_version: 5 });
+        await refreshCanvasConfigStore();
+        expect(mocks.getConfig).toHaveBeenCalledTimes(2);
+        expect(useConfigStore.getState().canvasConfig?.policy_version).toBe(5);
+        expect(getSelectedCanvasAPIKeyID()).toBeUndefined();
     });
 
     it("retries after a failed initialization", async () => {

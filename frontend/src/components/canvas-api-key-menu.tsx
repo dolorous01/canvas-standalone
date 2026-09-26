@@ -9,6 +9,7 @@ import { useCanvasSessionStore } from "@sub2api/stores/canvas-session-store";
 import type { CanvasAPIKey } from "@sub2api/api/canvas-api";
 import { canvasAPIKeyManagementPath } from "./canvas-api-key-navigation";
 
+import { ModelPolicyLink } from './model-policy-link';
 export function CanvasAPIKeyMenu({ showLabel = true }: { showLabel?: boolean }) {
     const { t } = useTranslation();
     const host = useCanvasHost();
@@ -73,6 +74,8 @@ export function CanvasAPIKeyMenu({ showLabel = true }: { showLabel?: boolean }) 
     const busy = loading || switching;
     const title = error || (!config?.enabled ? t("canvas.apiKeys.policyDisabled") : selected ? `${selected.name} · ${selected.group_name}` : t("canvas.apiKeys.select"));
     return (
+      <div className="flex items-center gap-2">
+        <ModelPolicyLink />
         <Tooltip title={title}>
             <Dropdown trigger={["click"]} menu={{ items, onClick }} placement="bottomRight">
                 <Button
@@ -85,6 +88,7 @@ export function CanvasAPIKeyMenu({ showLabel = true }: { showLabel?: boolean }) 
                 </Button>
             </Dropdown>
         </Tooltip>
+      </div>
     );
 }
 

@@ -8,6 +8,7 @@ import { createCanvasAPI, type CanvasCredentialCandidate } from '@sub2api/api/ca
 import { initializeCanvasConfigStore } from '@sub2api/adapters/use-config-store'
 import { useCanvasHost } from '@sub2api/host-context'
 
+import { ModelPolicyLink } from './model-policy-link'
 export default function CredentialBindingPage() {
   const { message, modal } = App.useApp()
   const { t } = useTranslation()
@@ -77,7 +78,10 @@ export default function CredentialBindingPage() {
               <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">{t('canvas.apiKeys.bindingDescription')}</p>
             </div>
           </div>
+          <div className="flex items-center gap-2">
+          <ModelPolicyLink />
           <Button icon={<RefreshCw className="size-4" />} loading={loading} onClick={() => void load()}>{t('canvas.apiKeys.refresh')}</Button>
+          </div>
         </header>
 
         {loading ? <div className="grid min-h-72 place-items-center"><Spin /></div> : error ? (

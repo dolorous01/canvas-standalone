@@ -75,6 +75,12 @@ export interface CanvasConfig {
   models: CanvasModel[]
 }
 
+export interface CanvasModelPolicy {
+  enabled: boolean
+  version: number
+  models: CanvasModel[]
+}
+
 export interface CanvasCredentialCandidate {
   id: number
   name: string
@@ -359,6 +365,8 @@ export interface CanvasAudioGenerate {
 }
 
 export interface CanvasAPI {
+  getModelPolicy(): Promise<CanvasModelPolicy>
+  updateModelPolicy(policy: CanvasModelPolicy): Promise<CanvasModelPolicy>
   listCredentialCandidates(): Promise<CanvasCredentialCandidate[]>
   bindCredential(externalAPIKeyID: number): Promise<CanvasCredential>
   deleteCredential(id: string): Promise<void>
@@ -412,6 +420,8 @@ export function createCanvasAPI(host: CanvasHostContext): CanvasAPI {
     : host.request<T | APIEnvelope<T>>(method, `${baseURL}${path}`, body, headers)))
 
   return {
+    getModelPolicy: () => request('GET', '/admin/model-policy'),
+    updateModelPolicy: (policy) => request('PUT', '/admin/model-policy', policy),
     async listCredentialCandidates() {
       const result = await request<{ items: CanvasCredentialCandidate[] }>('GET', '/credentials/candidates')
       return result.items

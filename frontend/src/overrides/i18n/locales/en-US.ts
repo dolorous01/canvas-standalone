@@ -1,5 +1,27 @@
 // Sub2API-owned locale override for the pinned upstream module.
 export default {
+    modelPolicy: {
+        title: "Model management", description: "Manage image models and generation settings available in Studio.",
+        back: "Back to Studio", reload: "Reload", add: "Add model", edit: "Edit model",
+        save: "Save", cancel: "Cancel", remove: "Delete", enabled: "Enabled", disabled: "Disabled",
+        globalEnabled: "Allow Studio image jobs", version: "Configuration version {{version}}",
+        scope: "This catalog applies to all Studio users. Actual access still depends on the selected API key and upstream support.",
+        adminOnly: "Only administrators can manage models.", loadFailed: "Could not load model settings.", saveFailed: "Could not save model settings.",
+        saved: "Model settings saved. The current Studio model list has been refreshed.",
+        conflict: "Another administrator changed the settings. Your changes were not saved. Reload before editing again.",
+        reloadDiscard: "Discard edits and load the latest settings",
+        modelEnabled: "Enable model {{model}}", generation: "Image generation", imageEdit: "Image editing",
+        deleteConfirm: "Delete model {{model}}? Saved projects and images will be kept.",
+        keepOne: "Keep at least one model. Disable it if it is not currently needed.",
+        name: "Model ID", nameHelp: "Use the complete upstream model ID, such as gpt-image-2.5-flare or gpt-image-2.5-sunburst. Verify supported capabilities when copying settings.",
+        template: "Copy settings from an existing model", templateHint: "Starts with the first model's settings; select another template if needed",
+        maxOutputs: "Maximum output images", maxInputs: "Maximum input images",
+        advanced: "Advanced capabilities (JSON)", advancedHelp: "Configure sizes, quality, output formats and defaults. Unchanged existing parameters are preserved.",
+        invalidName: "Enter a model ID of at most 128 characters without whitespace.",
+        duplicateName: "This model ID already exists (case insensitive).",
+        modelLimit: "A maximum of 100 models is supported.", invalidJSON: "Advanced parameters must be valid JSON.",
+        invalidCapability: "Only image models are supported. Enable generation or editing; input images must be 0–32 and output images 1–10."
+    },
     meta: {
         title: "Infinite Canvas",
         description: "An infinite canvas creation tool",

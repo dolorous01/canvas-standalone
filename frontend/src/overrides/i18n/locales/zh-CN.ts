@@ -1,5 +1,27 @@
 // Sub2API-owned locale override for the pinned upstream module.
 export default {
+    modelPolicy: {
+        title: "模型管理", description: "管理创作台可选择的图片模型与生成参数。",
+        back: "返回创作台", reload: "重新加载", add: "添加模型", edit: "编辑模型",
+        save: "保存", cancel: "取消", remove: "删除", enabled: "已启用", disabled: "已停用",
+        globalEnabled: "允许创作台提交图片任务", version: "配置版本 {{version}}",
+        scope: "此名单对所有创作台用户生效。模型是否可调用，仍由所选 Key 的权限和上游支持决定。",
+        adminOnly: "仅管理员可以管理模型。", loadFailed: "模型配置加载失败。", saveFailed: "模型配置保存失败。",
+        saved: "模型配置已保存，当前创作台模型列表已刷新。",
+        conflict: "配置已被其他管理员修改。本次未覆盖，请重新加载最新配置后再编辑。",
+        reloadDiscard: "放弃本次编辑并加载最新配置",
+        modelEnabled: "启用模型 {{model}}", generation: "文生图", imageEdit: "图片编辑",
+        deleteConfirm: "删除模型 {{model}}？已保存的项目和图片不会被删除。",
+        keepOne: "至少保留一个模型；暂时不用时可停用。",
+        name: "模型 ID", nameHelp: "填写上游的完整模型 ID，例如 gpt-image-2.5-flare 或 gpt-image-2.5-sunburst。复制参数后请核对新模型实际支持的能力。",
+        template: "复制已有模型的参数", templateHint: "默认沿用列表中第一个模型的参数，可选择其他模板",
+        maxOutputs: "每次最多生成图片数", maxInputs: "最多输入图片数",
+        advanced: "高级能力参数（JSON）", advancedHelp: "可调整尺寸、画质、输出格式和默认值。编辑已有模型时，未修改的参数会完整保留。",
+        invalidName: "模型 ID 不能为空、不能含空白字符，且不能超过 128 个字符。",
+        duplicateName: "此模型 ID 已存在（不区分大小写）。",
+        modelLimit: "最多可配置 100 个模型。", invalidJSON: "高级参数不是有效的 JSON。",
+        invalidCapability: "仅支持图片模型，至少启用文生图或图片编辑；输入图片数须为 0–32，输出图片数须为 1–10。"
+    },
     meta: {
         title: "无限画布",
         description: "一个无限画布创作工具",

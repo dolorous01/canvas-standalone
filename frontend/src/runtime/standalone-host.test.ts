@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { SessionAdapter } from './session-adapter'
-import { CanvasRequestError, canvasAPIBaseForPath, canvasBaseForPath, createStandaloneHost } from './standalone-host'
+import { CanvasRequestError, canvasAPIBaseForPath, canvasBaseForPath, createStandaloneHost, resolveStandaloneRole } from './standalone-host'
 
 function sessionWith(response: Response): SessionAdapter {
   return {
@@ -11,6 +11,21 @@ function sessionWith(response: Response): SessionAdapter {
 }
 
 describe('standalone host', () => {
+  it('uses the authenticated server session to determine administrator access', async () => {
+    for (const role of ['user', 'admin']) {
+      const session = sessionWith(new Response(JSON.stringify({ code: 0, data: { role, status: 'active' } }), {
+        headers: { 'Content-Type': 'application/json' }
+      }))
+      const host = await resolveStandaloneRole(createStandaloneHost({ session, apiBaseURL: '/canvas-api-next/v1' }))
+      expect(host.routeMode).toBe(role)
+      expect(session.authorizedFetch).toHaveBeenCalledWith('/canvas-api-next/v1/session', expect.objectContaining({ method: 'GET' }))
+    }
+    const session = sessionWith(new Response(JSON.stringify({ code: 0, data: { role: 'admin', status: 'disabled' } }), {
+      headers: { 'Content-Type': 'application/json' }
+    }))
+    await expect(resolveStandaloneRole(createStandaloneHost({ session }))).rejects.toThrow('Invalid Canvas session')
+  })
+
   it('selects stable and candidate same-origin prefixes from the entry path', () => {
     expect(canvasBaseForPath('/studio/canvas/project-1')).toBe('/studio')
     expect(canvasAPIBaseForPath('/studio/canvas/project-1')).toBe('/canvas-api/v1')

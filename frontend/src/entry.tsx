@@ -33,6 +33,7 @@ import 'streamdown/styles.css'
 import '@sub2api/styles/sub2api-canvas.css'
 import '@/styles/globals.css'
 
+const ModelPolicyPage = lazy(() => import('@sub2api/components/model-policy-page'))
 const FocusedImageEditor = lazy(() => import('@sub2api/editor/focused-image-editor'))
 
 const queryClient = new QueryClient({
@@ -81,6 +82,7 @@ function canvasRoutes(): RouteObject[] {
       )
     },
     { path: '/credentials', element: <CredentialBindingPage /> },
+    { path: '/admin/models', element: <Suspense fallback={<div>Loading…</div>}><ModelPolicyPage /></Suspense> },
     { path: '*', element: <Navigate to="/canvas" replace /> }
   ]
 }

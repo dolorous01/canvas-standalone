@@ -31,14 +31,14 @@ Key 和数据的长期边界、首次不迁移 Key、后续更新自动对账的
 
 ## 2. 当前真实状态
 
-截至 2026-09-26 入口恢复与会话兼容发布完成后（详见 [上线记录](ENTRY_RESTORE_20260926_CN.md)）：
+截至 2026-09-26 模型管理页发布完成后（入口恢复见 [上线记录](ENTRY_RESTORE_20260926_CN.md)，最新功能见 [模型管理](MODEL_MANAGEMENT_CN.md)）：
 
 | 项目 | 当前状态 |
 | --- | --- |
-| 正式 `/studio` | 独立 Canvas stable `0.1.1-session.1`，允许写入 |
+| 正式 `/studio` | 独立 Canvas stable `0.1.2-models.1`，允许写入；管理员可进入 `/studio/admin/models` |
 | stable API/Web 端口 | `127.0.0.1:18101` / `127.0.0.1:18100` |
-| stable 镜像 | API `sha256:ae4c1fcc...2cd50af1`；Web `sha256:dfefd2dc...a8568378` |
-| 独立 candidate | `0.1.1-session.1`，入口 `/studio-next`，保持只读 |
+| stable 镜像 | API `sha256:7e645909...b71fa372`；Web `sha256:32ea146e...50f1e5b7` |
+| 独立 candidate | `0.1.2-models.1`，入口 `/studio-next`，保持只读 |
 | candidate API/Web 端口 | `127.0.0.1:18111` / `127.0.0.1:18110` |
 | candidate 写入 | 关闭，`CANVAS_WRITES_ENABLED=false` |
 | candidate allowlist | 仅正式管理员 `external_user_id=1` |

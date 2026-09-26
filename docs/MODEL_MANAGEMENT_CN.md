@@ -34,4 +34,29 @@ https://dolorous.asia/studio/admin/models 。普通用户没有入口，后端�
 本次界面发布不自动增加或删除生产模型，现有模型能力参数完整保留。
 发布与回滚使用独立 Canvas 更新流程，不需要更新 Sub2API；发布后照常运行 Key 对账。
 如果保存时返回 401，请重新登录；403 表示没有管理员权限；503 `writes_disabled`
+
+## 2026-09-26 上线验收
+
+- 正式与候选版本：`0.1.2-models.1`；源码 `2ba74d6c448902e42c320ce4d670bb605c4e8138`。
+- API 镜像：`ghcr.io/dolorous01/canvas-standalone-api@sha256:7e645909b4b14e08a2882bf2bf6da7bf23aafb428bffc9a63e8f90dbb71fa372`。
+- Web 镜像：`ghcr.io/dolorous01/canvas-standalone-web@sha256:32ea146e3e3ce8d6cc6eeb90e8cee1f3c16b47c9504171e8dd9576a550f1e5b7`。
+- 完整 CI `36238079890`、标签 CI `36238213863`、镜像发布 `36238213811` 均成功。
+- 正式发布任务 `deploy-b9fa70e40c18474d8db529183d25d469` 成功，自动 Key 对账成功：
+  可见 8 个、可用 1 个、7 个未绑定，未接触 Key 明文或自动改变绑定。
+- 发布前后 Sub2API 容器 ID、镜像和启动时间完全一致，继续运行 `0.2.4-operator.4`。
+- 浏览器桌面 1440×980、手机 390×844 验收通过，无横向溢出、无运行时异常。
+- 已验证添加模型表单、复制参数、从 Key 页面跳转；候选入口保持 `/studio-next`。
+- candidate 保存返回 503（环境按原策略保持只读），配置版本及模型内容均未改变。
+- stable 实际编辑并保存原模型返回 200；模型参数及启用状态前后完全相同，
+  配置版本从 4 升为 5，并产生正常保存审计。没有自动添加 2.5 系列，没有收费生成。
+- 公共管理页与健康接口使用浏览器请求标识验证均 HTTP 200，指向新构建。
+
+浏览器结果和截图位于 `state/operator/model-ui-20260926/`，包括
+`candidate-result.json`、`stable-result.json`、`stable-screenshots-result.json`、
+`stable-desktop.png`、`stable-mobile.png`、`stable-add-model.png`。
+临时浏览器补充了中文字体，仅用于验收截图，没有改变线上字体配置。
+
+正式更新第一次请求曾返回 503；确认没有启动任务、版本查询恢复后重试成功。
+若类似情况再次发生，先查更新状态再重试，避免重复发布。公共 CDN 也可能拦截
+默认 Python 客户端；诊断时需区分 CDN 返回与应用返回，不要关闭现有安全校验。
 表示当前创作台环境只读。不要通过关闭认证或修改生产数据库绕过这些检查。

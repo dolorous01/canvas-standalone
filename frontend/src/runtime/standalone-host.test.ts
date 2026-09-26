@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import i18n from '@/i18n'
 import type { SessionAdapter } from './session-adapter'
 import { CanvasRequestError, canvasAPIBaseForPath, canvasBaseForPath, createStandaloneHost, resolveStandaloneRole } from './standalone-host'
 
@@ -11,6 +12,17 @@ function sessionWith(response: Response): SessionAdapter {
 }
 
 describe('standalone host', () => {
+  it('explains rejected image output formats in Chinese without losing the reason code', async () => {
+    await i18n.changeLanguage('zh-CN')
+    const session = sessionWith(new Response(JSON.stringify({ code: 400, message: 'Unsupported format', reason: 'job_parameter_output_format' }), {
+      status: 400, headers: { 'Content-Type': 'application/json' }
+    }))
+    const host = createStandaloneHost({ session })
+    await expect(host.request('POST', '/canvas-api/v1/jobs', {})).rejects.toEqual(
+      expect.objectContaining({ status: 400, reason: 'job_parameter_output_format', message: expect.stringContaining('图片输出格式与模型配置不一致') })
+    )
+  })
+
   it('uses the authenticated server session to determine administrator access', async () => {
     for (const role of ['user', 'admin']) {
       const session = sessionWith(new Response(JSON.stringify({ code: 0, data: { role, status: 'active' } }), {

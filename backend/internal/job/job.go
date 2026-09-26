@@ -35,6 +35,14 @@ var (
 	ErrCanceled            = errors.New("job was canceled before dispatch")
 )
 
+// ParameterError identifies a rejected field without exposing prompts or secrets.
+type ParameterError struct{ Field string }
+
+func (err *ParameterError) Error() string {
+	return "Image parameter is not supported by this model: " + err.Field
+}
+func (err *ParameterError) Unwrap() error { return ErrInvalid }
+
 type Parameters struct {
 	Size              string `json:"size,omitempty"`
 	AspectRatio       string `json:"aspect_ratio,omitempty"`
@@ -420,12 +428,22 @@ func applyDefaults(parameters Parameters, capability capability) Parameters {
 func validateParameters(input CreateInput, capability capability) error {
 	parameters := input.Parameters
 	if parameters.N <= 0 || parameters.N > 10 || (capability.MaxOutputs > 0 && parameters.N > capability.MaxOutputs) {
-		return ErrInvalid
+		return &ParameterError{Field: "n"}
 	}
-	if !allowed(parameters.Size, capability.Sizes) || !allowed(parameters.AspectRatio, capability.AspectRatios) ||
-		!allowed(parameters.Resolution, capability.Resolutions) || !allowed(parameters.Quality, capability.Qualities) ||
-		!allowed(parameters.OutputFormat, capability.OutputFormats) || !allowed(parameters.Background, capability.Backgrounds) {
-		return ErrInvalid
+	for _, parameter := range []struct {
+		field, value string
+		options      []string
+	}{
+		{"size", parameters.Size, capability.Sizes},
+		{"aspect_ratio", parameters.AspectRatio, capability.AspectRatios},
+		{"resolution", parameters.Resolution, capability.Resolutions},
+		{"quality", parameters.Quality, capability.Qualities},
+		{"output_format", parameters.OutputFormat, capability.OutputFormats},
+		{"background", parameters.Background, capability.Backgrounds},
+	} {
+		if !allowed(parameter.value, parameter.options) {
+			return &ParameterError{Field: parameter.field}
+		}
 	}
 	if parameters.Background == "transparent" && parameters.OutputFormat == "jpeg" {
 		return ErrInvalid

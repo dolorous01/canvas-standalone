@@ -138,7 +138,8 @@ export function buildCanvasImageParameters(config: AiConfig, model: string): Can
   }
   parameters.quality = allowedValue(config.quality, capability?.qualities) || capability?.defaults?.quality
   parameters.background = allowedValue(config.background, capability?.backgrounds) || capability?.defaults?.background
-  parameters.output_format = allowedValue('png', capability?.output_formats) || capability?.defaults?.output_format || 'png'
+  parameters.output_format = allowedValue(capability?.defaults?.output_format, capability?.output_formats)
+    || allowedValue('png', capability?.output_formats)
   return parameters
 }
 

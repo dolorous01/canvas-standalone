@@ -4,7 +4,7 @@ export const defaultImageCapability: CanvasCapability = {
   media_kind: 'image', provider: 'openai', dimension_mode: 'size',
   generation: true, edit: false, multi_image: false, mask: false,
   max_input_images: 0, max_outputs: 1, sizes: ['1024x1024'],
-  defaults: { size: '1024x1024' }
+  output_formats: ['png'], defaults: { size: '1024x1024', output_format: 'png' }
 }
 
 export function parseImageCapability(raw: string): CanvasCapability {

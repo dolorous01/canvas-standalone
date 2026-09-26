@@ -68,20 +68,47 @@ func TestAPIAuthCredentialAndProjectIsolation(t *testing.T) {
 				return
 			}
 			imageCalls.Add(1)
-			_, _ = io.WriteString(writer, `{"created":1,"data":[{"b64_json":"`+imageBase64+`"}]}`)
+			var input struct {
+				Model  string `json:"model"`
+				N      int    `json:"n"`
+				Format string `json:"output_format"`
+			}
+			if err := json.NewDecoder(request.Body).Decode(&input); err != nil {
+				t.Error(err)
+			}
+			if input.Model == "gpt-image-2.5-sunburst" && (input.N != 7 || input.Format != "png") {
+				t.Errorf("unexpected discovered model request: %+v", input)
+			}
+			data := make([]map[string]string, input.N)
+			for i := range data {
+				data[i] = map[string]string{"b64_json": imageBase64}
+			}
+			_ = json.NewEncoder(writer).Encode(map[string]any{"data": data})
 			return
+		}
+		if request.URL.Path == "/v1/models" {
+			if token != fullKey {
+				writer.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			_, _ = io.WriteString(writer, `{"data":[{"id":"gpt-image-2.5-sunburst"}]}`)
+			return
+		}
+		role := "user"
+		if token == "admin-token" {
+			role = "admin"
 		}
 		userID := int64(42)
 		if token == "user-two-token" {
 			userID = 84
-		} else if token != "user-one-token" {
+		} else if token != "user-one-token" && token != "admin-token" {
 			writer.WriteHeader(http.StatusUnauthorized)
 			_, _ = io.WriteString(writer, `{"code":401,"message":"unauthorized"}`)
 			return
 		}
 		switch request.URL.Path {
 		case "/api/v1/user/profile":
-			_, _ = io.WriteString(writer, `{"code":0,"message":"success","data":{"id":`+jsonNumber(userID)+`,"role":"user","status":"active"}}`)
+			_, _ = io.WriteString(writer, `{"code":0,"message":"success","data":{"id":`+jsonNumber(userID)+`,"role":"`+role+`","status":"active"}}`)
 		case "/api/v1/keys":
 			_, _ = io.WriteString(writer, `{"code":0,"message":"success","data":{"items":[{"id":7,"user_id":`+jsonNumber(userID)+`,"key":"must-be-stripped","name":"Studio","status":"active","quota":10,"quota_used":1}],"total":1}}`)
 		case "/api/v1/keys/7":
@@ -222,6 +249,69 @@ func TestAPIAuthCredentialAndProjectIsolation(t *testing.T) {
 	response = performRequestWithHeaders(t, handler, http.MethodPost, "/canvas-api/v1/jobs", "user-one-token", jobBody, map[string]string{"Idempotency-Key": "integration-job-1"})
 	if response.Code != http.StatusOK || imageCalls.Load() != 1 {
 		t.Fatalf("idempotent create response = %d, calls = %d, body = %s", response.Code, imageCalls.Load(), response.Body.String())
+	}
+
+	// Exercise the actual discovery -> policy save -> seven-image job -> asset flow.
+	response = performRequest(t, handler, http.MethodGet, "/canvas-api/v1/admin/model-discovery?api_key_id=7", "admin-token", "")
+	if response.Code != http.StatusOK {
+		t.Fatalf("discovery: %d %s", response.Code, response.Body.String())
+	}
+	var discovery struct {
+		Data struct {
+			Models []discoveredModel `json:"models"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &discovery); err != nil || len(discovery.Data.Models) != 1 {
+		t.Fatalf("discovery contract: %v %s", err, response.Body.String())
+	}
+	discovered := discovery.Data.Models[0]
+	var cap map[string]any
+	if err := json.Unmarshal(discovered.Capability, &cap); err != nil {
+		t.Fatal(err)
+	}
+	cap["max_outputs"] = 7
+	discovered.Capability, _ = json.Marshal(cap)
+	current, err := policyRepository.Get(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	originalModels := append([]policy.Model(nil), current.Models...)
+	defer func() {
+		latest, readErr := policyRepository.Get(ctx)
+		if readErr != nil {
+			t.Error(readErr)
+			return
+		}
+		if _, restoreErr := policyRepository.Update(ctx, 42, "restore-integration-policy", latest.Version, current.Enabled, originalModels); restoreErr != nil {
+			t.Error(restoreErr)
+		}
+	}()
+	current.Models = append(current.Models, policy.Model{Model: discovered.Model, Enabled: true, Position: len(current.Models), Capability: discovered.Capability})
+	updateBody, _ := json.Marshal(current)
+	response = performRequest(t, handler, http.MethodPut, "/canvas-api/v1/admin/model-policy", "admin-token", string(updateBody))
+	if response.Code != http.StatusOK {
+		t.Fatalf("save discovered model: %d %s", response.Code, response.Body.String())
+	}
+	discoveredBody := `{"project_id":"` + item.PublicID + `","client_node_id":"node-discovered","operation":"generation","api_key_id":7,"selected_model":"gpt-image-2.5-sunburst","prompt":"seven simple squares","parameters":{"n":7,"size":"1024x1024","output_format":"png"}}`
+	invalidBody := strings.Replace(discoveredBody, `"output_format":"png"`, `"output_format":"webp"`, 1)
+	response = performRequestWithHeaders(t, handler, http.MethodPost, "/canvas-api/v1/jobs", "user-one-token", invalidBody, map[string]string{"Idempotency-Key": "invalid-format"})
+	if response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), "job_parameter_output_format") || imageCalls.Load() != 1 {
+		t.Fatalf("invalid format: %d %s", response.Code, response.Body.String())
+	}
+	response = performRequestWithHeaders(t, handler, http.MethodPost, "/canvas-api/v1/jobs", "user-one-token", discoveredBody, map[string]string{"Idempotency-Key": "discovered-job"})
+	if response.Code != http.StatusAccepted {
+		t.Fatalf("discovered job: %d %s", response.Code, response.Body.String())
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &jobEnvelope); err != nil {
+		t.Fatal(err)
+	}
+	processed, err = processor.RunOnce(ctx)
+	if err != nil || !processed {
+		t.Fatalf("discovered RunOnce: %v %v", processed, err)
+	}
+	response = performRequest(t, handler, http.MethodGet, "/canvas-api/v1/jobs/"+jobEnvelope.Data.PublicID, "user-one-token", "")
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"status":"completed"`) || !strings.Contains(response.Body.String(), `"completed_count":7`) || imageCalls.Load() != 2 {
+		t.Fatalf("discovered completion: %d %s", response.Code, response.Body.String())
 	}
 }
 

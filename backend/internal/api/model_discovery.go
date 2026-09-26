@@ -116,7 +116,8 @@ func recognizeImageModel(id string, configured []policy.Model) (discoveredModel,
 		"media_kind": "image", "provider": provider, "dimension_mode": "size",
 		"generation": true, "edit": false, "multi_image": false, "mask": false,
 		"max_input_images": 0, "max_outputs": 1, "sizes": []string{"1024x1024"},
-		"defaults": map[string]string{"size": "1024x1024"},
+		"output_formats": []string{"png"},
+		"defaults":       map[string]string{"size": "1024x1024", "output_format": "png"},
 	})
 	return discoveredModel{id, capability, false, "basic"}, true
 }

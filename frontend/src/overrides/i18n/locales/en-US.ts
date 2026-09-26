@@ -1,5 +1,14 @@
 // Sub2API-owned locale override for the pinned upstream module.
 export default {
+    jobValidation: {
+        job_parameter_n: "Image count exceeds this model's limit. Reduce the count and retry.",
+        job_parameter_size: "This image size is not supported by the model.",
+        job_parameter_aspect_ratio: "This aspect ratio is not supported by the model.",
+        job_parameter_resolution: "This resolution is not supported by the model.",
+        job_parameter_quality: "This quality is not supported by the model.",
+        job_parameter_output_format: "The output format does not match the model settings. Refresh the page or check output formats in Model management.",
+        job_parameter_background: "This background setting is not supported by the model.",
+    },
     modelPolicy: {
         discoveryKey: "Select a bound API key",
         chooseKey: "Choose a key to discover models automatically",

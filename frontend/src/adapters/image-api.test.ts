@@ -33,7 +33,8 @@ vi.mock('@sub2api/adapters/image-storage', () => ({
   uploadImage: vi.fn()
 }))
 
-import { requestGeneration } from './image-api'
+import { requestGeneration, buildCanvasImageParameters } from './image-api'
+import { defaultImageCapability } from '../components/model-policy-form'
 
 function config(): AiConfig {
   return {
@@ -80,6 +81,29 @@ describe('Sub2API image adapter', () => {
         results: [{ index: 0, status: 'completed', asset_id: 'image-asset', mime_type: 'image/png' }]
       }
     })
+  })
+
+  it('does not send an output format for legacy models that do not advertise one', () => {
+    mocks.capability.mockReturnValue({
+      generation: true, max_outputs: 10, sizes: ['1024x1024'],
+      defaults: { size: '1024x1024' }
+    })
+    const parameters = buildCanvasImageParameters({ ...config(), count: '7' }, 'gpt-image-2.5-sunburst')
+    expect(parameters.n).toBe(7)
+    expect(JSON.parse(JSON.stringify(parameters))).not.toHaveProperty('output_format')
+  })
+
+  it('builds supported parameters from the new model defaults', () => {
+    expect(defaultImageCapability.output_formats).toContain('png')
+    expect(defaultImageCapability.defaults?.output_format).toBe('png')
+    mocks.capability.mockReturnValue(defaultImageCapability)
+    const parameters = buildCanvasImageParameters({ ...config(), count: '7' }, 'gpt-image-2.5-sunburst')
+    expect(parameters).toMatchObject({ n: 1, size: '1024x1024', output_format: 'png' })
+  })
+
+  it('uses an advertised default format when PNG is not supported', () => {
+    mocks.capability.mockReturnValue({ max_outputs: 1, sizes: ['1024x1024'], output_formats: ['webp'], defaults: { output_format: 'webp' } })
+    expect(buildCanvasImageParameters(config(), 'custom').output_format).toBe('webp')
   })
 
   it('records the durable job before returning its stored asset', async () => {

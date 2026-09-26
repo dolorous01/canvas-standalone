@@ -1,3 +1,4 @@
+import i18n from '@/i18n'
 import type { CanvasHostContext } from '@sub2api/host-context'
 import { createSessionAdapter, type SessionAdapter } from './session-adapter'
 
@@ -71,7 +72,10 @@ export function createStandaloneHost(options: StandaloneHostOptions = {}): Canva
       ? await response.json() as T & APIEnvelope
       : undefined
     if (!response.ok || (value && typeof value.code === 'number' && value.code !== 0)) {
-      const message = value?.message?.trim() || `Canvas request failed with HTTP ${response.status}`
+      const translationKey = `jobValidation.${value?.reason}`
+      const message = value?.reason?.startsWith('job_parameter_') && i18n.exists(translationKey)
+        ? i18n.t(translationKey)
+        : value?.message?.trim() || `Canvas request failed with HTTP ${response.status}`
       throw new CanvasRequestError(response.status, message, value?.reason ?? '')
     }
     if (value === undefined) throw new CanvasRequestError(response.status, 'Canvas returned a non-JSON response')

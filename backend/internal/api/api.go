@@ -971,6 +971,10 @@ func (server *server) writeError(writer http.ResponseWriter, request *http.Reque
 }
 
 func classifyError(err error) (int, string, string) {
+	var parameterError *job.ParameterError
+	if errors.As(err, &parameterError) {
+		return http.StatusBadRequest, "job_parameter_" + parameterError.Field, parameterError.Error()
+	}
 	switch {
 	case errors.Is(err, errInvalidRequest), errors.Is(err, project.ErrInvalidDocument), errors.Is(err, asset.ErrInvalidFile):
 		return http.StatusBadRequest, "invalid_request", "The request is invalid."

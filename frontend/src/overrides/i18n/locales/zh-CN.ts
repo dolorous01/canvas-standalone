@@ -1,5 +1,14 @@
 // Sub2API-owned locale override for the pinned upstream module.
 export default {
+    jobValidation: {
+        job_parameter_n: "生成张数超出该模型允许的范围，请减少张数后重试。",
+        job_parameter_size: "图片尺寸不在该模型允许的范围内，请重新选择尺寸。",
+        job_parameter_aspect_ratio: "当前模型不支持所选宽高比。",
+        job_parameter_resolution: "当前模型不支持所选分辨率。",
+        job_parameter_quality: "当前模型不支持所选画质。",
+        job_parameter_output_format: "图片输出格式与模型配置不一致，请刷新页面；若仍失败，请在模型管理中检查输出格式。",
+        job_parameter_background: "当前模型不支持所选背景设置。",
+    },
     modelPolicy: {
         discoveryKey: "选择已绑定的 Key",
         chooseKey: "请选择 Key，选中后自动探测",

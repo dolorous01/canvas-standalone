@@ -3,6 +3,9 @@
 状态：首次拆分不迁移 Key；后续更新执行只读对账
 适用仓库：`/home/ubuntu/canvas-standalone`
 
+启用登录 IP / UA 绑定时，网页更新自动传递临时会话上下文；命令行配置及排查见
+[SESSION_BINDING_CN.md](SESSION_BINDING_CN.md)。不要为了对账而关闭会话绑定。
+
 ## 1. 先说结论
 
 可以把 Sub2API 和创作台分开更新，也可以在任一方更新后运行同一个脚本核对 Key。这里

@@ -1,7 +1,7 @@
 # Sub2API 与创作台双轨升级手册
 
 状态：正式拆分已完成，Sub2API 与 Canvas 可独立更新
-最近验证：2026-09-13
+最近验证：2026-09-26
 
 ## 1. 最终目标
 
@@ -31,26 +31,26 @@ Key 和数据的长期边界、首次不迁移 Key、后续更新自动对账的
 
 ## 2. 当前真实状态
 
-截至 2026-09-13 正式切流完成后：
+截至 2026-09-26 入口恢复与会话兼容发布完成后（详见 [上线记录](ENTRY_RESTORE_20260926_CN.md)）：
 
 | 项目 | 当前状态 |
 | --- | --- |
-| 正式 `/studio` | 独立 Canvas stable `0.1.0`，已接管并允许写入 |
+| 正式 `/studio` | 独立 Canvas stable `0.1.1-session.1`，允许写入 |
 | stable API/Web 端口 | `127.0.0.1:18101` / `127.0.0.1:18100` |
-| stable 镜像 | API `sha256:a4a1ce8e...b6b1a90e`；Web `sha256:c5ffa3c8...d3071e` |
-| 独立 candidate | `0.1.0-rehearsal.5`，入口 `/studio-next`，只读对账接口已部署 |
+| stable 镜像 | API `sha256:ae4c1fcc...2cd50af1`；Web `sha256:dfefd2dc...a8568378` |
+| 独立 candidate | `0.1.1-session.1`，入口 `/studio-next`，保持只读 |
 | candidate API/Web 端口 | `127.0.0.1:18111` / `127.0.0.1:18110` |
 | candidate 写入 | 关闭，`CANVAS_WRITES_ENABLED=false` |
 | candidate allowlist | 仅正式管理员 `external_user_id=1` |
 | 路由文件 | `/home/ubuntu/canvas-standalone/state/proxy-routes.rehearsal.json` |
 | 迁移摘要 | `74565d67189ec023533ec5538a250228a53954cb57ae75963cf50fb6e4cd6813` |
-| 当前 Sub2API | `0.2.4-operator.1`，green 活动，镜像 `sha256:166fdf47...0960c205` |
+| 当前 Sub2API | `0.2.4-operator.4`，blue 活动，镜像 `sha256:0cec47d5...f0952c5` |
 | 官方更新保护 | 已启用；发布前后强制证明 Canvas stable 身份完全不变 |
 | 旧 Canvas 写入 | 永久冻结；`state/operator/legacy-canvas-frozen` 不得删除 |
 | 首次 Key 方案 | 已按约定迁移 0 个 credential；管理员按需手动绑定一次 |
 | 后续 Key 对账 | 网页独立更新后自动运行，只读且不接触 Key 明文 |
-| Canvas 到 Sub2API | 本机桥接流量被防火墙丢弃，两个 slot 固定使用 `https://dolorous.asia` |
-| 网页更新控制器 | 已安装；operator.2 起管理员侧边栏直接显示“更新管理”，登录用户从“创作台”进入 /studio/ |
+| Canvas 到 Sub2API | 两个私网经 `http://host.docker.internal:8080` 回调，保留登录 IP / UA |
+| 网页更新控制器 | 已上线；管理员侧边栏显示“更新管理”，登录用户从“创作台”进入 `/studio/` |
 
 现在可以分别更新两边。更新 Sub2API 只切 blue/green，更新 Canvas 先发布 candidate，验收
 后再发布 stable。旧的 `/api/v1/admin/system/update` 继续返回 403，这是预期保护；不要
@@ -378,7 +378,7 @@ migration。
 
 本机已于 2026-09-13 完成本节。以下内容作为首次迁移审计记录和新机器实施模板保留，
 不得在日常更新中重复执行。新机器首次迁移仍必须安排维护窗口并按
-`/home/ubuntu/sub2api-infinite-canvas/docs/CANVAS_STANDALONE_MIGRATION_CN.md`
+`/home/ubuntu/legacy-code-archive-20260926/sub2api-infinite-canvas/docs/CANVAS_STANDALONE_MIGRATION_CN.md`
 第 23 节执行。
 
 切流前必须同时满足：
@@ -469,36 +469,25 @@ cd "$standalone_root"
 
 当前只允许 `external_user_id=1`。确认使用管理员账号；不要清空 allowlist 来绕过验收。
 
-### 9.5 Canvas 登录返回 `official_unavailable`
+### 9.5 Canvas 登录返回 `official_unavailable` 或 401
 
-先从对应 API 容器验证官方入口：
+先从对应 API 容器验证内部官方入口：
 
 ```bash
 docker exec canvas_stable_api \
-  /usr/local/bin/canvas-healthcheck http://host.docker.internal:18080/health
-docker exec canvas_stable_api \
-  /usr/local/bin/canvas-healthcheck https://dolorous.asia/health
+  /usr/local/bin/canvas-healthcheck http://host.docker.internal:8080/health
 ```
 
-本机防火墙会丢弃第一条 bridge-to-host 请求，第二条 HTTPS 请求应成功。因此生产
-`deploy/environments/stable.env` 和 `candidate.env` 都使用：
+`18080` 仅监听宿主机回环地址，容器不能直接访问。
+2026-09-26 起仅为两个 Canvas 私网开放内部路径代理，两个 slot 使用：
 
 ```text
-CANVAS_OFFICIAL_BASE_URL=https://dolorous.asia
+CANVAS_OFFICIAL_BASE_URL=http://host.docker.internal:8080
 ```
 
-修改后只重建对应 slot 的 API/worker，并继续使用当前 release 文件：
-
-```bash
-docker compose --project-name canvas-stable \
-  --env-file deploy/environments/stable.env \
-  --env-file state/stable/releases/current.env \
-  -f deploy/compose.yml up -d --force-recreate api worker
-./deploy/canvas-verify.sh --slot stable --route-file "$canvas_route_file"
-```
-
-不要把公网 IP、Docker gateway IP 或临时容器 IP写死到配置。若以后调整主机防火墙并恢复
-内部入口，必须先在 candidate 验证认证、图片请求和超时路径，再修改 stable。
+公网 URL 会让 CDN 改写 IP，无法保持原用户的会话绑定。按
+[SESSION_BINDING_CN.md](SESSION_BINDING_CN.md) 检查私网规则、指纹透传和对账上下文。
+网络修复后仍 401 的旧会话请重新登录；不要关闭 Sub2API 的会话绑定。
 
 ### 9.6 更新失败后的状态
 

@@ -17,6 +17,25 @@ Sub2API 启用 IP / User-Agent 会话绑定时，独立创作台必须沿用用�
 6. 用同一登录会话验证 `/api/v1/admin/deployments`、`/canvas-api/v1/session` 和
    `/canvas-api/v1/credentials/candidates`，然后运行更新后只读对账。
 
+本机 2026-09-26 已验证的规则如下（换服务器时先核对桥名、网段和 host-gateway）：
+
+```bash
+sudo ufw allow in on br-94987ef87b8e from 172.20.0.0/16 to 172.17.0.1 port 8080 proto tcp comment 'Canvas stable internal official API'
+sudo ufw allow in on br-c99740d13cc2 from 172.19.0.0/16 to 172.17.0.1 port 8080 proto tcp comment 'Canvas candidate internal official API'
+docker exec canvas_candidate_api /usr/local/bin/canvas-healthcheck http://host.docker.internal:8080/health
+docker exec canvas_stable_api /usr/local/bin/canvas-healthcheck http://host.docker.internal:8080/health
+```
+
+此处不开放 `8080` 的公网访问，不开放 `18080`，也不关闭 UFW。
+不要 `docker compose down` 删除网络后仍沿用旧桥名规则；普通 release 不会删除网络。
+若必须重建网络，重新读取 network ID（桥名为 `br-` 加 ID 前 12 位），更新上述规则。
+移除旧规则使用 `sudo ufw status numbered` 核对后执行 `sudo ufw delete <规则编号>`。
+
+代理旧文件和环境配置备份位于：
+`state/operator/proxy-backup-20260926.0SRF4c/`（目录 0700）。
+回滚代码应连同网络和环境配置一起评估；旧 Canvas 不支持当前绑定会话，
+仅回滚镜像会恢复旧登录故障。无需恢复或覆盖数据库。
+
 ## 安全边界
 
 路径代理与 Canvas Gateway 仅传递 User-Agent、CF-Connecting-IP、X-Real-IP、X-Forwarded-For。

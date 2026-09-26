@@ -26,6 +26,7 @@ export default function ModelPolicyPage() {
   const [conflict, setConflict] = useState(false)
   const [draft, setDraft] = useState<Draft>()
   const [draftError, setDraftError] = useState('')
+  const [discoverySession, setDiscoverySession] = useState(0)
   const admin = host.routeMode === 'admin'
 
   const load = useCallback(async () => {
@@ -67,6 +68,7 @@ export default function ModelPolicyPage() {
 
   const edit = (index: number | null) => {
     if (!policy) return
+    setDiscoverySession((value) => value + 1)
     const model = index === null ? undefined : policy.models[index]
     setDraft({ index, name: model?.model ?? '', enabled: model?.enabled ?? true,
       capability: JSON.stringify(model?.capability ?? defaultImageCapability, null, 2) })
@@ -150,7 +152,7 @@ export default function ModelPolicyPage() {
         {draft && <div className="flex flex-col gap-4 py-3">
           {(draftError || error) && <Alert type="error" title={draftError || error} />}
           {conflict && <Button onClick={() => void load()}>{t('modelPolicy.reloadDiscard')}</Button>}
-          {draft.index === null && <ModelDiscoveryPicker api={api}
+          {draft.index === null && <ModelDiscoveryPicker key={discoverySession} api={api}
             onReset={() => setDraft((current) => current ? { ...current, name: '' } : current)}
             onSelect={(model) => {
               setDraft((current) => current ? { ...current, name: model.model, capability: JSON.stringify(model.capability, null, 2) } : current)

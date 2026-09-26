@@ -58,6 +58,25 @@ describe('model policy management', () => {
   }
 
 
+
+  it('loads keys again when the add dialog is reopened', async () => {
+    let calls = 0
+    request.mockImplementation(async (_method: string, path: string) => {
+      if (path.endsWith('/credentials/candidates')) {
+        calls++
+        return { code: 0, data: { items: calls === 1 ? [] : [{ id: 32, name: 'New binding', bound: true, status: 'active', quota: 0, quota_used: 0 }] } }
+      }
+      if (path.includes('/model-discovery?')) return { code: 0, data: { api_key_id: 32, total: 0, models: [] } }
+      return { code: 0, data: policy }
+    })
+    await mount('admin')
+    await act(async () => button('Add model').click())
+    expect(document.body.textContent).toContain('No eligible bound key.')
+    await act(async () => button('Cancel', document.querySelector('.ant-modal')!).click())
+    await act(async () => button('Add model').click())
+    expect(calls).toBe(2)
+    expect(document.body.textContent).toContain('No compatible image models recognized.')
+  })
   it('automatically discovers a single bound key and imports the selected image model', async () => {
     const discovered = { model: 'gpt-image-2.5-flare', capability: defaultImageCapability, configured: false, parameter_source: 'basic' }
     request.mockImplementation(async (method: string, path: string, body: unknown) => {

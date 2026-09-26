@@ -35,10 +35,10 @@ Key 和数据的长期边界、首次不迁移 Key、后续更新自动对账的
 
 | 项目 | 当前状态 |
 | --- | --- |
-| 正式 `/studio` | 独立 Canvas stable `0.1.5-model-sidebar.1`，允许写入；侧栏模型管理与简易表单已上线，保留七张生成修复 |
+| 正式 `/studio` | 独立 Canvas stable `0.1.6-inline-result.1`，允许写入；已修复 Base64 与 URL 同时返回时被拒绝的问题，正式单张任务验证通过 |
 | stable API/Web 端口 | `127.0.0.1:18101` / `127.0.0.1:18100` |
-| stable 镜像 | API `sha256:a1a7e8f6...74c6e71b`；Web `sha256:49926bb1...7b9a0a31` |
-| 独立 candidate | `0.1.5-model-sidebar.1`，入口 `/studio-next`，保持只读 |
+| stable 镜像 | API `sha256:fbeb10fe...1e0e6eeb`；Web `sha256:9df612ed...d8393493` |
+| 独立 candidate | `0.1.6-inline-result.1`，入口 `/studio-next`，保持只读 |
 | candidate API/Web 端口 | `127.0.0.1:18111` / `127.0.0.1:18110` |
 | candidate 写入 | 关闭，`CANVAS_WRITES_ENABLED=false` |
 | candidate allowlist | 仅正式管理员 `external_user_id=1` |

@@ -21,7 +21,10 @@ https://dolorous.asia/studio/admin/models 。普通用户没有入口，后端�
    其他已打开的浏览器标签页需要刷新后读取新名单。
 
 若旧版导入后遇到 `The image job is invalid.`，参见
-[输出格式修复与七张生成验收](IMAGE_FORMAT_FIX_CN.md)。当前版本为 `0.1.5-model-sidebar.1`。
+[输出格式修复与七张生成验收](IMAGE_FORMAT_FIX_CN.md)。当前版本为 `0.1.6-inline-result.1`。
+
+若上游返回成功而创作台提示结果无法保存，参见
+[Base64 与 URL 双字段响应修复](INLINE_RESULT_FIX_CN.md)，该修复已上线并通过正式任务验证。
 
 探测仅调用主站 `GET /v1/models`，不提交收费生成任务。主站可能返回平台默认名单，
 因此“探测到”不等于生成成功，也不证明图片权限、余额、账号调度和所有参数均可用。

@@ -39,14 +39,14 @@ describe('model policy management', () => {
     vi.unstubAllGlobals()
   })
 
-  async function mount(role: 'user' | 'admin', link = false) {
+  async function mount(role: 'user' | 'admin', link = false, compact = false) {
     const host: CanvasHostContext = {
       apiBaseURL: '/canvas-api-next/v1', locale: 'en-US', theme: 'light', routeMode: role,
       request, navigate, notify: vi.fn(), stream: async () => new ReadableStream<Uint8Array>()
     }
     await act(async () => root.render(
       <CanvasHostProvider store={createCanvasHostStore(host)}><App><MemoryRouter>
-        {link ? <ModelPolicyLink /> : <ModelPolicyPage />}
+        {link ? <ModelPolicyLink /> : <ModelPolicyPage compact={compact} />}
       </MemoryRouter></App></CanvasHostProvider>
     ))
   }
@@ -58,6 +58,33 @@ describe('model policy management', () => {
   }
 
 
+
+
+  it('edits common settings in the compact panel without navigating or editing JSON', async () => {
+    await mount('admin', false, true)
+    expect(document.querySelector('button[aria-label="Back to Studio"]')).toBeNull()
+    await act(async () => button('Edit model').click())
+    const modal = document.querySelector('.ant-modal')!
+    const advanced = modal.querySelector('textarea')!.closest('details')!
+    expect(advanced.open).toBe(false)
+    const count = modal.querySelector<HTMLInputElement>('input[aria-label="Maximum output images"]')!
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(count, '7')
+      count.dispatchEvent(new Event('input', { bubbles: true }))
+      count.dispatchEvent(new Event('change', { bubbles: true }))
+      count.blur()
+    })
+    await act(async () => modal.querySelector<HTMLButtonElement>('button[aria-label="Image editing"]')!.click())
+    const format = modal.querySelector<HTMLSelectElement>('select[aria-label="Default output format"]')!
+    await act(async () => { format.value = ''; format.dispatchEvent(new Event('change', { bubbles: true })) })
+    await act(async () => button('Save', modal).click())
+    const body = request.mock.calls.find(([method]) => method === 'PUT')?.[2]
+    expect(body.version).toBe(7)
+    expect(body.models[0].capability).toMatchObject({ max_outputs: 7, edit: true, max_input_images: 1, multi_image: false, output_formats: ['png'] })
+    expect(body.models[0].capability.defaults.output_format).toBeUndefined()
+    expect(refresh).toHaveBeenCalledOnce()
+    expect(navigate).not.toHaveBeenCalled()
+  })
 
   it('loads keys again when the add dialog is reopened', async () => {
     let calls = 0

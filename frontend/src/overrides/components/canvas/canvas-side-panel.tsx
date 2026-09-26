@@ -1,10 +1,12 @@
 // Sub2API-owned UI override for the pinned upstream module.
-import { memo, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { lazy, Suspense, memo, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { App, Empty, Input, Popconfirm, Select, Spin, Tag } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Check, ChevronRight, Download, Eye, FileText, Image as ImageIcon, ListChecks, Music2, Plus, Search, Settings2, Square, Trash2, Type, Video } from "lucide-react";
 import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
+import { useCanvasHost } from "@sub2api/host-context";
+const ModelPolicyPanel = lazy(() => import("@sub2api/components/model-policy-page"));
 
 import { canvasThemes, type CanvasTheme } from "@/lib/canvas-theme";
 import { exportCanvasNodes } from "@/lib/canvas/canvas-export";
@@ -25,7 +27,7 @@ import type { InsertAssetPayload } from "./asset-picker-modal";
 const PANEL_MOTION_SECONDS = CANVAS_SIDE_PANEL_MOTION_MS / 1000;
 const PANEL_EASE = [0.22, 1, 0.36, 1] as const;
 
-type PanelTab = "canvas" | "assets" | "prompts";
+type PanelTab = "canvas" | "assets" | "prompts" | "models";
 
 type Props = {
     nodes: CanvasNodeData[];
@@ -55,6 +57,7 @@ export function CanvasSidePanel({ nodes, selectedNodeIds, onFocusNode, onPreview
     const { t } = useTranslation();
     const theme = canvasThemes[useThemeStore((state) => state.theme)];
     const [tab, setTab] = useState<PanelTab>("canvas");
+    const admin = useCanvasHost().routeMode === "admin";
     const width = useCanvasSidePanelStore((state) => state.width);
     const panelOpen = useCanvasSidePanelStore((state) => state.panelOpen);
     const panelMounted = useCanvasSidePanelStore((state) => state.panelMounted);
@@ -114,13 +117,16 @@ export function CanvasSidePanel({ nodes, selectedNodeIds, onFocusNode, onPreview
                 style={{ width, background: theme.toolbar.panel, borderColor: theme.toolbar.border, color: theme.node.text }}
                 data-canvas-no-zoom
             >
-                <div className="flex items-center gap-5 px-4 pt-3.5">
+                <div className="flex shrink-0 items-center justify-between gap-2 overflow-x-auto px-3 pt-3.5">
                     <TabButton label={t("canvas.sidePanel.canvas")} active={tab === "canvas"} theme={theme} onClick={() => setTab("canvas")} />
                     <TabButton label={t("canvas.sidePanel.assets")} active={tab === "assets"} theme={theme} onClick={() => setTab("assets")} />
                     <TabButton label={t("canvas.sidePanel.prompts")} active={tab === "prompts"} theme={theme} onClick={() => setTab("prompts")} />
+                    {admin && <TabButton label={t("modelPolicy.sidebarTitle")} active={tab === "models"} theme={theme} onClick={() => setTab("models")} />}
                 </div>
                 <div className="mt-2 min-h-0 flex-1 overflow-hidden">
-                    {tab === "canvas" ? (
+                    {tab === "models" && admin ? (
+                        <Suspense fallback={<Spin />}><ModelPolicyPanel compact /></Suspense>
+                    ) : tab === "canvas" ? (
                         <CanvasNodesTab nodes={nodes} selectedNodeIds={selectedNodeIds} onFocusNode={onFocusNode} onPreviewNode={onPreviewNode} theme={theme} />
                     ) : tab === "assets" ? (
                         <CanvasAssetsTab onInsert={onInsertAsset} theme={theme} />
@@ -136,7 +142,7 @@ export function CanvasSidePanel({ nodes, selectedNodeIds, onFocusNode, onPreview
 
 function TabButton({ label, active, theme, onClick }: { label: string; active: boolean; theme: CanvasTheme; onClick: () => void }) {
     return (
-        <button type="button" onClick={onClick} className="relative pb-1.5 text-sm font-semibold transition-opacity" style={{ color: theme.node.text, opacity: active ? 1 : 0.45 }}>
+        <button type="button" aria-pressed={active} onClick={onClick} className="relative shrink-0 whitespace-nowrap pb-1.5 text-sm font-semibold transition-opacity" style={{ color: theme.node.text, opacity: active ? 1 : 0.45 }}>
             {label}
             {active ? <motion.span layoutId="sidePanelTabIndicator" className="absolute inset-x-0 -bottom-px h-0.5 rounded-full" style={{ background: theme.toolbar.activeText }} transition={{ type: "spring", stiffness: 500, damping: 34 }} /> : null}
         </button>
